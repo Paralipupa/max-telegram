@@ -1,0 +1,12 @@
+
+services:
+  bridge:
+    build:
+      args:
+        ENVIRONMENT: development
+    container_name: max_telegram_bridge_dev
+    command: run_bridge_debug
+    volumes:
+      - ./tmp:/tmp
+    ports:
+      - "5005:5005"

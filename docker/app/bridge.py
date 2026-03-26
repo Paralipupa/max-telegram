@@ -1,18 +1,156 @@
-
 import asyncio
 from browser import BrowserManager
 from max_client import MaxClient
-from telegram import send_telegram
+import asyncio
+import time
+from telegram_client import (
+    send,
+    send_document,
+    send_media_group,
+    send_photo,
+    send_video,
+)
+from dedup_store import DedupStore
+from loguru import logger
+import os
+from browser import TAIL_LIMIT
+import re
 
 async def run_bridge():
     b = await BrowserManager.get()
     page = b["page"]
     maxc = MaxClient(page)
 
-    last = None
+    store = DedupStore()
+    await _warmup_dedup_if_needed(store, maxc)
+    seen_count = store.count()
+    last_count_refresh = time.monotonic()
+
     while True:
-        msg = await maxc.read_last_message()
-        if msg and msg != last:
-            last = msg
-            send_telegram("MAX: " + msg)
+        try:
+            seen_count, last_count_refresh = _refresh_seen_count_if_needed(
+                store, seen_count, last_count_refresh
+            )
+            msgs = await maxc.get_recent_messages_info(
+                limit=_dynamic_tail_limit(seen_count)
+            )
+            seen_count = _process_messages(store, msgs, seen_count)
+        except Exception as e:
+            logger.error(f"Ошибка: {e}")
         await asyncio.sleep(1)
+
+
+def _format_images_caption(msg: dict) -> str:
+    caption = msg.get("caption")
+    return f"MAX: {caption}" if caption else "MAX: [фото]"
+
+
+def _format_attachments_caption(msg: dict) -> str:
+    caption = msg.get("caption")
+    return f"MAX: {caption}" if caption else "MAX: [файл]"
+
+
+def _strip_trailing_time(caption: str) -> str:
+    if re.search(r"\d{2}:\d{2}$", caption):
+        return re.sub(r"\s*\d{2}:\d{2}$", "", caption)
+    return caption
+
+
+def _send_attachments(msg: dict, caption: str) -> None:
+    items = msg.get("items") or []
+    cap = _strip_trailing_time(caption)
+    for i, item in enumerate(items):
+        url = item.get("url")
+        if not url:
+            continue
+        c = cap if i == 0 else None
+        if item.get("kind") == "video":
+            send_video(url, c)
+        else:
+            send_document(url, c)
+
+
+def _send_to_telegram(msg: dict, message_text: str) -> None:
+    if msg["type"] == "images":
+        caption = _format_images_caption(msg)
+        caption = _strip_trailing_time(caption)
+        urls = msg.get("urls") or []
+        if len(urls) == 1:
+            send_photo(urls[0], caption)
+        else:
+            send_media_group(urls, caption)
+        return
+
+    if msg["type"] == "attachments":
+        cap = _format_attachments_caption(msg)
+        cap = _strip_trailing_time(cap)
+        _send_attachments(msg, cap)
+        return
+
+    if msg["type"] == "mixed":
+        cap_img = _strip_trailing_time(_format_images_caption(msg))
+        image_urls = msg.get("image_urls") or []
+        if len(image_urls) == 1:
+            send_photo(image_urls[0], cap_img)
+        elif len(image_urls) > 1:
+            send_media_group(image_urls, cap_img)
+        for item in msg.get("attachments") or []:
+            url = item.get("url")
+            if not url:
+                continue
+            if item.get("kind") == "video":
+                send_video(url, None)
+            else:
+                send_document(url, None)
+        return
+
+    send("MAX: " + message_text)
+
+
+def _refresh_seen_count_if_needed(
+    store: DedupStore,
+    seen_count: int,
+    last_count_refresh: float,
+    interval_sec: float = 5.0,
+) -> tuple[int, float]:
+    now = time.monotonic()
+    if now - last_count_refresh >= interval_sec:
+        return store.count(), now
+    return seen_count, last_count_refresh
+
+
+def _dynamic_tail_limit(seen_count: int, tail_limit: int = TAIL_LIMIT) -> int:
+    return min(tail_limit, max(1, seen_count))
+
+
+async def _warmup_dedup_if_needed(store: DedupStore, maxc: MaxClient) -> None:
+    if store.count() != 0:
+        return
+    try:
+        warm = await maxc.get_recent_messages_info(limit=TAIL_LIMIT)
+        for msg in warm:
+            store.add(store.fingerprint(msg))
+    except Exception as e:
+        logger.error(f"Ошибка прогрева дедупа: {e}")
+
+
+def _process_messages(
+    store: DedupStore,
+    msgs: list[dict],
+    seen_count: int,
+) -> int:
+    for msg in reversed(msgs):
+        message_text = msg.get("text") or msg.get("caption") or ""
+        if re.search(r'\d{2}:\d{2}$', message_text):
+            message_text = re.sub(r'\s*\d{2}:\d{2}$', '', message_text)
+        if "TELEGRAM:" in message_text:
+            continue
+        fp = store.fingerprint(msg)
+        if store.has(fp):
+            break
+
+        _send_to_telegram(msg, message_text)
+
+        store.add(fp)
+        seen_count += 1
+    return seen_count
