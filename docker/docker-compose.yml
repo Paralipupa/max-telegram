@@ -1,0 +1,14 @@
+
+version: "3.8"
+services:
+  bridge:
+    build: .
+    container_name: max_telegram_bridge
+    restart: always
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./data:/data
+    environment:
+      TELEGRAM_BOT_TOKEN: "PUT_TOKEN"
+      TELEGRAM_CHAT_ID: "PUT_CHAT"
