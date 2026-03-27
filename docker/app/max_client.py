@@ -269,15 +269,17 @@ class MaxClient:
         await self.page.keyboard.press("Enter")
 
     async def debug_screenshot(self, name: str):
-        path = f"/tmp/debug_{name}.png"
-        await self.page.screenshot(path=path)
-        logger.info(f"Screenshot: {path}")
+        # path = f"/tmp/debug_{name}.png"
+        # await self.page.screenshot(path=path)
+        # logger.info(f"Screenshot: {path}")
+        return
 
     async def debug_html(self, name: str):
-        path = f"/tmp/debug_{name}.html"
-        with open(path, "w") as f:
-            f.write(await self.page.content())
-        logger.info(f"HTML dump: {path}")
+        # path = f"/tmp/debug_{name}.html"
+        # with open(path, "w") as f:
+        #     f.write(await self.page.content())
+        # logger.info(f"HTML dump: {path}")
+        return
 
     async def send_photo(self, photo_path: str, caption: str | None = None) -> None:
         await self.page.wait_for_load_state("domcontentloaded")

@@ -15,6 +15,7 @@ WEBHOOK_PATH = f"/bot{TELEGRAM_BOT_TOKEN}/"
 
 app = FastAPI()
 
+logger.info(f"WEBHOOK_PATH: {WEBHOOK_PATH}")
 
 @app.post(WEBHOOK_PATH, response_class=PlainTextResponse)
 async def hook(request: Request) -> str:
@@ -25,6 +26,7 @@ async def hook(request: Request) -> str:
     except Exception as e:
         logger.error(f"Error processing payload: {e}")
         return PlainTextResponse("error", status_code=500)
+
 
 @app.api_route(
     "/{path:path}",
@@ -40,6 +42,7 @@ async def catch_all(path: str):
         },
     )
 
+
 async def process(data):
     b = await BrowserManager.get()
     page = b["page"]
@@ -50,8 +53,8 @@ async def process(data):
 
     message = data.get("message") or {}
     text = message.get("text") or message.get("caption") or ""
-    if re.search(r'\d{2}:\d{2}$', text):
-        text = re.sub(r'\s*\d{2}:\d{2}$', '', text)
+    if re.search(r"\d{2}:\d{2}$", text):
+        text = re.sub(r"\s*\d{2}:\d{2}$", "", text)
     photo_file_id = _extract_photo_file_id(message)
     if not text and not photo_file_id:
         raise ValueError("bad request")
