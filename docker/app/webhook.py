@@ -17,11 +17,22 @@ app = FastAPI()
 
 logger.info(f"WEBHOOK_PATH: {WEBHOOK_PATH}")
 
+
+def _log_background_task(task: asyncio.Task) -> None:
+    try:
+        exc = task.exception()
+    except asyncio.CancelledError:
+        return
+    if exc is not None:
+        logger.error("Background process failed: {!r}", exc)
+
+
 @app.post(WEBHOOK_PATH, response_class=PlainTextResponse)
 async def hook(request: Request) -> str:
     try:
         payload = await request.json()
-        asyncio.create_task(process(payload))
+        t = asyncio.create_task(process(payload))
+        t.add_done_callback(_log_background_task)
         return "ok"
     except Exception as e:
         logger.error(f"Error processing payload: {e}")
