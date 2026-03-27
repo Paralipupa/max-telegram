@@ -4,6 +4,8 @@ import asyncio, os, requests
 from browser import BrowserManager
 from max_client import MaxClient
 from loguru import logger
+from fastapi.responses import JSONResponse
+from fastapi import status
 import tempfile
 import re
 
@@ -24,6 +26,19 @@ async def hook(request: Request) -> str:
         logger.error(f"Error processing payload: {e}")
         return PlainTextResponse("error", status_code=500)
 
+@app.api_route(
+    "/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+)
+async def catch_all(path: str):
+    logger.info(f"Запрошенный путь /{path} не существует")
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={
+            "status": "error",
+            "details": f"Запрошенный путь /{path} не существует",
+        },
+    )
 
 async def process(data):
     b = await BrowserManager.get()
