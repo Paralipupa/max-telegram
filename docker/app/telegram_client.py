@@ -47,6 +47,7 @@ def send(text: str, *, dedup_key: str | None = None) -> None:
         json={"chat_id": CHAT_ID, "text": text},
         timeout=60,
     )
+    logger.info(f"telegram sendMessage: {r.text} - {dedup_key}")
     try:
         data = r.json()
     except Exception:
