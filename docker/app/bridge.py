@@ -139,6 +139,7 @@ def _process_messages(
     msgs: list[dict],
     seen_count: int,
 ) -> int:
+    batch_added: set[str] = set()
     for msg in reversed(msgs):
         message_text = msg.get("text") or msg.get("caption") or ""
         if re.search(r'\d{2}:\d{2}$', message_text):
@@ -147,10 +148,13 @@ def _process_messages(
             continue
         fp = store.fingerprint(msg)
         if store.has(fp):
+            if fp in batch_added:
+                continue
             break
 
         _send_to_telegram(msg, message_text)
 
         store.add(fp)
+        batch_added.add(fp)
         seen_count += 1
     return seen_count
