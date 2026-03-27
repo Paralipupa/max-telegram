@@ -147,14 +147,12 @@ def _process_messages(
         if "TELEGRAM:" in message_text:
             continue
         fp = store.fingerprint(msg)
-        if store.has(fp):
+        if not store.claim_fingerprint(fp):
             if fp in batch_added:
                 continue
             break
-
-        _send_to_telegram(msg, message_text)
-
-        store.add(fp)
         batch_added.add(fp)
+        logger.info(f"Sending message: {message_text} - {fp}")
+        _send_to_telegram(msg, message_text)
         seen_count += 1
     return seen_count

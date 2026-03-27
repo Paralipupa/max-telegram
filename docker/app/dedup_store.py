@@ -78,16 +78,14 @@ class DedupStore:
 
     @staticmethod
     def fingerprint(message: dict[str, Any]) -> str:
-        normalized = DedupStore._normalize_message(message)
+        # stable_id from DOM is often a React/recycled id and changes between polls — breaks dedup.
+        m = {k: v for k, v in message.items() if k != "stable_id"}
+        normalized = DedupStore._normalize_message(m)
         payload = json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return hashlib.sha256(payload).hexdigest()
 
     @staticmethod
     def _normalize_message(message: dict[str, Any]) -> dict[str, Any]:
-        sid = message.get("stable_id")
-        if isinstance(sid, str) and sid.strip():
-            return {"sid": sid.strip()}
-
         t = message.get("type")
         if t == "text":
             return {
@@ -152,6 +150,25 @@ class DedupStore:
                 "caption": _norm_caption((message.get("caption") or "").strip()),
             }
         return {"type": str(t or "unknown"), "raw": message}
+
+    def claim_fingerprint(self, fingerprint: str) -> bool:
+        """Atomically insert fingerprint. True if this caller was first (safe across processes)."""
+        now = int(time.time())
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                "INSERT INTO seen(fingerprint, created_at) VALUES(?, ?)",
+                (fingerprint, now),
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            conn.rollback()
+            return False
+        finally:
+            conn.close()
+        self.prune()
+        return True
 
     def has(self, fingerprint: str) -> bool:
         with self._connect() as conn:
