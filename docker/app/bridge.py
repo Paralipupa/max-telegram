@@ -154,6 +154,9 @@ def _process_messages(
             message_text = re.sub(r'\s*\d{2}:\d{2}$', '', message_text)
         if "TELEGRAM:" in message_text:
             continue
+        # Outbound relay format; echo back into Max (or DOM) must not re-forward to Telegram.
+        if message_text.strip().startswith("MAX:"):
+            continue
         fp = store.fingerprint(msg)
         if not store.claim_fingerprint(fp):
             if fp in batch_added:

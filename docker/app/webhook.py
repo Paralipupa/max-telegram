@@ -70,6 +70,13 @@ async def catch_all(path: str):
 
 
 async def process(data):
+    message = data.get("message") or {}
+    # Bot's own messages in the group (our relay to Telegram) must not be echoed back to Max,
+    # or the bridge will see a new bubble and send "MAX: …" to Telegram again (duplicate).
+    from_user = message.get("from") or {}
+    if from_user.get("is_bot"):
+        return
+
     b = await BrowserManager.get()
     page = b["page"]
     maxc = MaxClient(page)
@@ -77,7 +84,6 @@ async def process(data):
 
     await maxc.open_chat(chat_id)
 
-    message = data.get("message") or {}
     text = message.get("text") or message.get("caption") or ""
     if re.search(r"\d{2}:\d{2}$", text):
         text = re.sub(r"\s*\d{2}:\d{2}$", "", text)
