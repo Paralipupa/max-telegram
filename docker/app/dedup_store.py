@@ -1,9 +1,19 @@
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import time
 from typing import Any, Iterable
+
+
+def _strip_trailing_time(s: str) -> str:
+    """Match bridge display logic: DOM may add/remove HH:MM suffix between polls."""
+    t = s.strip()
+    if re.search(r"\d{2}:\d{2}$", t):
+        return re.sub(r"\s*\d{2}:\d{2}$", "", t).strip()
+    return t
+
 
 class DedupStore:
     """
@@ -52,7 +62,10 @@ class DedupStore:
     def _normalize_message(message: dict[str, Any]) -> dict[str, Any]:
         t = message.get("type")
         if t == "text":
-            return {"type": "text", "text": (message.get("text") or "").strip()}
+            return {
+                "type": "text",
+                "text": _strip_trailing_time((message.get("text") or "").strip()),
+            }
         if t in ("image", "images"):
             urls: Iterable[str]
             if "urls" in message and isinstance(message["urls"], list):
@@ -63,7 +76,7 @@ class DedupStore:
             return {
                 "type": "images",
                 "urls": sorted(urls),
-                "caption": (message.get("caption") or "").strip(),
+                "caption": _strip_trailing_time((message.get("caption") or "").strip()),
             }
         if t == "attachments":
             items = message.get("items") or []
@@ -82,7 +95,7 @@ class DedupStore:
             return {
                 "type": "attachments",
                 "items": norm_items,
-                "caption": (message.get("caption") or "").strip(),
+                "caption": _strip_trailing_time((message.get("caption") or "").strip()),
             }
         if t == "mixed":
             imgs = [str(u) for u in (message.get("image_urls") or []) if u]
@@ -103,7 +116,7 @@ class DedupStore:
                 "type": "mixed",
                 "image_urls": sorted(imgs),
                 "attachments": norm_att,
-                "caption": (message.get("caption") or "").strip(),
+                "caption": _strip_trailing_time((message.get("caption") or "").strip()),
             }
         return {"type": str(t or "unknown"), "raw": message}
 

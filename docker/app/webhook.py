@@ -1,9 +1,12 @@
+import concurrent.futures
+
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 import asyncio, os, requests
 from browser import BrowserManager
 from max_client import MaxClient
 from loguru import logger
+from main_loop import get_main_loop
 from fastapi.responses import JSONResponse
 from fastapi import status
 import tempfile
@@ -27,12 +30,24 @@ def _log_background_task(task: asyncio.Task) -> None:
         logger.error("Background process failed: {!r}", exc)
 
 
+def _log_threadsafe_future(fut: concurrent.futures.Future) -> None:
+    try:
+        fut.result()
+    except Exception as e:
+        logger.error("Background process failed: {!r}", e)
+
+
 @app.post(WEBHOOK_PATH, response_class=PlainTextResponse)
 async def hook(request: Request) -> str:
     try:
         payload = await request.json()
-        t = asyncio.create_task(process(payload))
-        t.add_done_callback(_log_background_task)
+        main = get_main_loop()
+        if main is not None and main.is_running():
+            fut = asyncio.run_coroutine_threadsafe(process(payload), main)
+            fut.add_done_callback(_log_threadsafe_future)
+        else:
+            t = asyncio.create_task(process(payload))
+            t.add_done_callback(_log_background_task)
         return "ok"
     except Exception as e:
         logger.error(f"Error processing payload: {e}")

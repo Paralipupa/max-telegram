@@ -1,12 +1,13 @@
-
 import asyncio
 import threading
 import uvicorn
 from bridge import run_bridge
 from webhook import app
 from browser import BrowserManager
+from main_loop import set_main_loop
 
 async def main():
+    set_main_loop(asyncio.get_running_loop())
     await BrowserManager.get()
 
     threading.Thread(
