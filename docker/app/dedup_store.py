@@ -28,11 +28,9 @@ class DedupStore:
         self._init()
 
     def _connect(self) -> sqlite3.Connection:
-        logger.info(f"Подключаемся к базе данных: {self.db_path}")
         conn = sqlite3.connect(self.db_path)
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=NORMAL;")
-        logger.info(f"Подключено к базе данных: {self.db_path}")
         return conn
 
     def _init(self) -> None:
