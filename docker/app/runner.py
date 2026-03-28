@@ -1,28 +1,42 @@
-
 import asyncio
 import os
 import uvicorn
 from bridge import run_bridge
-from webhook import app
+from webhook import create_app
 from browser import BrowserManager
 from loguru import logger
-from constants import DEDUP_PATH
+from constants import load_pairs
+
 
 async def main():
-    if os.path.exists(DEDUP_PATH):
-        logger.info(f"Сбрасываем дедупликацию: {DEDUP_PATH}")
-        try:
-            os.remove(DEDUP_PATH)
-        except Exception as e:
-            logger.error(f"Ошибка при сбросе дедупликации: {e}")
+    pairs = load_pairs()
+    if not pairs:
+        logger.error(
+            "Нет пар чатов! Задайте PAIR_1_MAX_CHAT_ID / PAIR_1_TELEGRAM_BOT_TOKEN / "
+            "PAIR_1_TELEGRAM_CHAT_ID (или устаревшие MAX_CHAT_ID / TELEGRAM_BOT_TOKEN / "
+            "TELEGRAM_CHAT_ID для одной пары)."
+        )
+        return
 
-    await BrowserManager.get()
+    logger.info(f"Загружено {len(pairs)} пар чатов: {[p.name for p in pairs]}")
 
+    # Сбрасываем дедупликацию и заранее открываем страницы для каждой пары.
+    # Последовательная инициализация гарантирует создание браузера до старта фоновых задач.
+    for pair in pairs:
+        if os.path.exists(pair.dedup_path):
+            logger.info(f"[{pair.name}] Сбрасываем дедупликацию: {pair.dedup_path}")
+            try:
+                os.remove(pair.dedup_path)
+            except Exception as e:
+                logger.error(f"[{pair.name}] Ошибка сброса дедупликации: {e}")
+        await BrowserManager.get(pair.name, pair.max_url)
+
+    app = create_app(pairs)
     config = uvicorn.Config(app, host="0.0.0.0", port=8081, log_level="info")
     server = uvicorn.Server(config)
 
     await asyncio.gather(
-        run_bridge(),
+        *[run_bridge(pair) for pair in pairs],
         server.serve(),
     )
 

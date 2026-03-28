@@ -1,90 +1,81 @@
 import requests
-from constants import (
-    TOKEN,
-    TELEGRAM_CHAT_ID,
-    TELEGRAM_SEND_MESSAGE_URL,
-    TELEGRAM_SEND_PHOTO_URL,
-    TELEGRAM_SEND_MEDIA_GROUP_URL,
-    TELEGRAM_SEND_DOCUMENT_URL,
-    TELEGRAM_SEND_VIDEO_URL,
-)
+from constants import ChatPair
 from loguru import logger
 
-def send(text):
-    """Отправляет текстовое сообщение в Telegram."""
-    logger.info(f"Отправляем сообщение: {text} токен: {TOKEN} чат: {TELEGRAM_CHAT_ID}")
-    requests.post(
-        TELEGRAM_SEND_MESSAGE_URL.format(token=TOKEN),
-        json={"chat_id": TELEGRAM_CHAT_ID, "text": text},
-    )
-    logger.info(f"Отправлено сообщение: {text}")
 
-def send_photo(photo_url, caption=None):
-    """Отправляет фото в Telegram по URL (прямая ссылка)."""
-    logger.info(f"Отправляем фото: {photo_url} - {caption} токен: {TOKEN} чат: {TELEGRAM_CHAT_ID}")
-    data = {"chat_id": TELEGRAM_CHAT_ID, "photo": photo_url}
+def send(pair: ChatPair, text: str) -> None:
+    """Отправляет текстовое сообщение в Telegram."""
+    logger.info(f"[{pair.name}] Отправляем текст в чат {pair.telegram_chat_id}: {text}")
+    requests.post(f"{pair.tg_api}/sendMessage", json={"chat_id": pair.telegram_chat_id, "text": text})
+    logger.info(f"[{pair.name}] Отправлено")
+
+
+def send_photo(pair: ChatPair, photo_url: str, caption: str | None = None) -> None:
+    """Отправляет фото в Telegram по URL."""
+    logger.info(f"[{pair.name}] Отправляем фото: {photo_url} - {caption}")
+    data: dict = {"chat_id": pair.telegram_chat_id, "photo": photo_url}
     if caption:
         data["caption"] = caption
-    requests.post(TELEGRAM_SEND_PHOTO_URL.format(token=TOKEN), json=data)
-    logger.info(f"Отправлено фото: {photo_url} - {caption}")
+    requests.post(f"{pair.tg_api}/sendPhoto", json=data)
+    logger.info(f"[{pair.name}] Фото отправлено")
 
 
 def send_document(
-    document: str | bytes, caption: str | None = None, filename: str = "file"
+    pair: ChatPair,
+    document: str | bytes,
+    caption: str | None = None,
+    filename: str = "file",
 ) -> None:
     """Отправляет файл в Telegram: по URL или как bytes (multipart)."""
-    logger.info(f"Отправляем документ: {document} - {caption} токен: {TOKEN} чат: {TELEGRAM_CHAT_ID} filename: {filename}")
+    logger.info(f"[{pair.name}] Отправляем документ: {caption} filename={filename}")
     if isinstance(document, bytes):
-        data: dict = {"chat_id": TELEGRAM_CHAT_ID}
+        data: dict = {"chat_id": pair.telegram_chat_id}
         if caption:
             data["caption"] = caption
-        requests.post(
-            TELEGRAM_SEND_DOCUMENT_URL.format(token=TOKEN),
-            data=data,
-            files={"document": (filename, document)},
-        )
+        requests.post(f"{pair.tg_api}/sendDocument", data=data, files={"document": (filename, document)})
     else:
-        data = {"chat_id": TELEGRAM_CHAT_ID, "document": document}
+        data = {"chat_id": pair.telegram_chat_id, "document": document}
         if caption:
             data["caption"] = caption
-        requests.post(TELEGRAM_SEND_DOCUMENT_URL.format(token=TOKEN), json=data)
-    logger.info(f"Отправлен документ: {document} - {caption}")
+        requests.post(f"{pair.tg_api}/sendDocument", json=data)
+    logger.info(f"[{pair.name}] Документ отправлен")
+
 
 def send_video(
-    video: str | bytes, caption: str | None = None, filename: str = "video.mp4"
+    pair: ChatPair,
+    video: str | bytes,
+    caption: str | None = None,
+    filename: str = "video.mp4",
 ) -> None:
     """Отправляет видео в Telegram: по URL или как bytes (multipart)."""
-    logger.info(f"Отправляем видео: {video} - {caption} токен: {TOKEN} чат: {TELEGRAM_CHAT_ID} filename: {filename}")
+    logger.info(f"[{pair.name}] Отправляем видео: {caption} filename={filename}")
     if isinstance(video, bytes):
-        data: dict = {"chat_id": TELEGRAM_CHAT_ID}
+        data: dict = {"chat_id": pair.telegram_chat_id}
         if caption:
             data["caption"] = caption
-        requests.post(
-            TELEGRAM_SEND_VIDEO_URL.format(token=TOKEN),
-            data=data,
-            files={"video": (filename, video)},
-        )
+        requests.post(f"{pair.tg_api}/sendVideo", data=data, files={"video": (filename, video)})
     else:
-        data = {"chat_id": TELEGRAM_CHAT_ID, "video": video}
+        data = {"chat_id": pair.telegram_chat_id, "video": video}
         if caption:
             data["caption"] = caption
-        requests.post(TELEGRAM_SEND_VIDEO_URL.format(token=TOKEN), json=data)
-    logger.info(f"Отправлено видео: {video} - {caption}")
+        requests.post(f"{pair.tg_api}/sendVideo", json=data)
+    logger.info(f"[{pair.name}] Видео отправлено")
 
-def send_media_group(photo_urls: list[str], caption: str | None = None) -> None:
+
+def send_media_group(pair: ChatPair, photo_urls: list[str], caption: str | None = None) -> None:
     """Отправляет несколько фото одним альбомом (sendMediaGroup)."""
-    logger.info(f"Отправляем альбом: {photo_urls} - {caption} токен: {TOKEN} чат: {TELEGRAM_CHAT_ID}")
+    logger.info(f"[{pair.name}] Отправляем альбом: {len(photo_urls)} фото - {caption}")
     urls = [u for u in photo_urls if isinstance(u, str) and u.strip()]
     if not urls:
         return
     media = []
     for i, url in enumerate(urls):
-        item = {"type": "photo", "media": url}
+        item: dict = {"type": "photo", "media": url}
         if i == 0 and caption:
             item["caption"] = caption
         media.append(item)
     requests.post(
-        TELEGRAM_SEND_MEDIA_GROUP_URL.format(token=TOKEN),
-        json={"chat_id": TELEGRAM_CHAT_ID, "media": media},
+        f"{pair.tg_api}/sendMediaGroup",
+        json={"chat_id": pair.telegram_chat_id, "media": media},
     )
-    logger.info(f"Отправлен альбом: {photo_urls} - {caption}")
+    logger.info(f"[{pair.name}] Альбом отправлен")

@@ -1,30 +1,36 @@
 import asyncio
-import os
 from playwright.async_api import async_playwright
-from constants import PAGE_URL, HEADLESS
+from constants import HEADLESS
 
 
 class BrowserManager:
-    _instance = None
-    # Лок предотвращает одновременное использование страницы bridge и webhook:
-    # webhook делает page.goto() пока bridge читает DOM → таймаут wait_for_selector
-    lock: asyncio.Lock = asyncio.Lock()
+    """
+    Управляет одним браузером Chromium с отдельной страницей для каждой пары чатов.
+    Каждая пара имеет свой asyncio.Lock, чтобы bridge и webhook не обращались
+    к странице одновременно.
+    """
+    _pw = None
+    _browser = None
+    _context = None
+    # pair_name → {"page": Page, "lock": asyncio.Lock}
+    _pages: dict[str, dict] = {}
 
     @classmethod
-    async def get(cls):
-        if cls._instance:
-            return cls._instance
+    async def get(cls, pair_name: str, initial_url: str) -> dict:
+        """Возвращает {page, lock} для пары. При первом вызове инициализирует браузер."""
+        if pair_name in cls._pages:
+            return cls._pages[pair_name]
 
-        pw = await async_playwright().start()
-        browser = await pw.chromium.launch(headless=HEADLESS)
-        context = await browser.new_context(storage_state="/data/auth.json")
-        page = await context.new_page()
-        await page.goto(PAGE_URL)
+        if cls._browser is None:
+            cls._pw = await async_playwright().start()
+            cls._browser = await cls._pw.chromium.launch(headless=HEADLESS)
+            cls._context = await cls._browser.new_context(storage_state="/data/auth.json")
 
-        cls._instance = {
-            "pw": pw,
-            "browser": browser,
-            "context": context,
+        page = await cls._context.new_page()
+        await page.goto(initial_url)
+
+        cls._pages[pair_name] = {
             "page": page,
+            "lock": asyncio.Lock(),
         }
-        return cls._instance
+        return cls._pages[pair_name]

@@ -2,18 +2,13 @@ import asyncio, os, tempfile, requests
 from browser import BrowserManager
 from max_client import MaxClient
 from loguru import logger
-from constants import (
-    MAX_CHAT_ID,
-    MEDIA_GROUP_TIMEOUT,
-    TELEGRAM_API_URL,
-    TELEGRAM_FILE_API_URL,
-)
+from constants import ChatPair, MEDIA_GROUP_TIMEOUT
 from helpers import strip_trailing_time, apply_text_links
 from collage import make_collage
 
-# Буфер медиагрупп: group_id → список сообщений.
-# После MEDIA_GROUP_TIMEOUT секунд все фото группы отправляются вместе.
-_media_group_buffer: dict[str, list[dict]] = {}
+# Буфер медиагрупп: (pair_name, group_id) → список сообщений.
+# Ключ включает имя пары, чтобы разные пары с одинаковыми group_id не конфликтовали.
+_media_group_buffer: dict[tuple[str, str], list[dict]] = {}
 
 
 def log_background_task(task: asyncio.Task) -> None:
@@ -25,29 +20,29 @@ def log_background_task(task: asyncio.Task) -> None:
         logger.error("Background process failed: {!r}", exc)
 
 
-async def process(data: dict) -> None:
+async def process(data: dict, pair: ChatPair) -> None:
     message = data.get("message") or {}
     media_group_id = message.get("media_group_id")
 
     if media_group_id:
-        is_first = media_group_id not in _media_group_buffer
-        _media_group_buffer.setdefault(media_group_id, []).append(message)
+        key = (pair.name, media_group_id)
+        is_first = key not in _media_group_buffer
+        _media_group_buffer.setdefault(key, []).append(message)
         if is_first:
-            t = asyncio.create_task(_delayed_send_media_group(media_group_id))
+            t = asyncio.create_task(_delayed_send_media_group(key, pair))
             t.add_done_callback(log_background_task)
         return
 
-    await _process_single_message(message)
+    await _process_single_message(message, pair)
 
 
-async def _delayed_send_media_group(group_id: str) -> None:
+async def _delayed_send_media_group(key: tuple[str, str], pair: ChatPair) -> None:
     """Ждёт MEDIA_GROUP_TIMEOUT секунд, затем отправляет коллаж из всех фото группы."""
     await asyncio.sleep(MEDIA_GROUP_TIMEOUT)
-    messages = _media_group_buffer.pop(group_id, [])
+    messages = _media_group_buffer.pop(key, [])
     if not messages:
         return
 
-    # Caption берём из первого сообщения, которое его содержит
     caption = ""
     for m in messages:
         raw = m.get("caption") or ""
@@ -66,13 +61,13 @@ async def _delayed_send_media_group(group_id: str) -> None:
     if not photo_ids:
         return
 
-    logger.info(f"Медиагруппа {group_id}: скачиваем {len(photo_ids)} фото для коллажа")
+    logger.info(f"[{pair.name}] Медиагруппа {key[1]}: скачиваем {len(photo_ids)} фото для коллажа")
 
     local_paths: list[str] = []
     collage_path: str | None = None
     try:
         for fid in photo_ids:
-            local_paths.append(_download_telegram_file(fid))
+            local_paths.append(_download_telegram_file(fid, pair))
 
         collage_bytes = make_collage(local_paths)
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
@@ -80,12 +75,10 @@ async def _delayed_send_media_group(group_id: str) -> None:
         tmp.close()
         collage_path = tmp.name
 
-        b = await BrowserManager.get()
-        page = b["page"]
-        maxc = MaxClient(page)
-
-        async with BrowserManager.lock:
-            await maxc.open_chat(MAX_CHAT_ID)
+        b = await BrowserManager.get(pair.name, pair.max_url)
+        async with b["lock"]:
+            maxc = MaxClient(b["page"])
+            await maxc.open_chat(pair.max_chat_id)
             await maxc.send_photo(collage_path, caption=caption or "")
     finally:
         for p in local_paths:
@@ -95,12 +88,8 @@ async def _delayed_send_media_group(group_id: str) -> None:
             os.remove(collage_path)
 
 
-async def _process_single_message(message: dict) -> None:
+async def _process_single_message(message: dict, pair: ChatPair) -> None:
     """Обрабатывает одиночное (не медиагрупповое) сообщение."""
-    b = await BrowserManager.get()
-    page = b["page"]
-    maxc = MaxClient(page)
-
     text = message.get("text") or message.get("caption") or ""
     entities = message.get("entities") or message.get("caption_entities") or []
     text = strip_trailing_time(apply_text_links(text, entities))
@@ -108,9 +97,11 @@ async def _process_single_message(message: dict) -> None:
     if not text and not file_id:
         raise ValueError("bad request")
 
-    async with BrowserManager.lock:
-        await maxc.open_chat(MAX_CHAT_ID)
-        await send_to_max(b, text=text, file_id=file_id, media_type=media_type)
+    b = await BrowserManager.get(pair.name, pair.max_url)
+    async with b["lock"]:
+        maxc = MaxClient(b["page"])
+        await maxc.open_chat(pair.max_chat_id)
+        await send_to_max(b, text=text, file_id=file_id, media_type=media_type, pair=pair)
 
 
 def _pick_photo_id(photos: list[dict], max_width: int | None = None) -> str | None:
@@ -153,9 +144,9 @@ def _extract_file_info(message: dict) -> tuple[str | None, str | None]:
     return None, None
 
 
-def _download_telegram_file(file_id: str) -> str:
+def _download_telegram_file(file_id: str, pair: ChatPair) -> str:
     file_resp = requests.get(
-        f"{TELEGRAM_API_URL}/getFile",
+        f"{pair.tg_api}/getFile",
         params={"file_id": file_id},
         timeout=15,
     )
@@ -168,7 +159,7 @@ def _download_telegram_file(file_id: str) -> str:
     out_path = tmp.name
 
     download_resp = requests.get(
-        f"{TELEGRAM_FILE_API_URL}/{file_path}",
+        f"{pair.tg_file_api}/{file_path}",
         timeout=30,
     )
     download_resp.raise_for_status()
@@ -179,16 +170,15 @@ def _download_telegram_file(file_id: str) -> str:
 
 
 async def send_to_max(
-    b, text: str, file_id: str | None = None, media_type: str | None = None
+    b: dict, text: str, file_id: str | None = None, media_type: str | None = None, pair: ChatPair = None
 ) -> None:
     local_path = None
-    page = b["page"]
-    maxc = MaxClient(page)
+    maxc = MaxClient(b["page"])
     try:
         if file_id:
-            local_path = _download_telegram_file(file_id)
+            local_path = _download_telegram_file(file_id, pair)
             logger.info(
-                f"Downloaded {media_type} to {local_path}, size: {os.path.getsize(local_path)}"
+                f"[{pair.name}] Скачан {media_type}: {local_path}, размер: {os.path.getsize(local_path)}"
             )
             if media_type in ("photo", "video"):
                 await maxc.send_photo(local_path, caption=text or "")
@@ -198,9 +188,9 @@ async def send_to_max(
             await maxc.send_message(text)
     except Exception as e:
         try:
-            logger.error(f"send_to_max failed: {e} url={page.url!r}")
+            logger.error(f"[{pair.name}] send_to_max failed: {e} url={b['page'].url!r}")
         except Exception:
-            logger.error(f"send_to_max failed: {e}")
+            logger.error(f"[{pair.name}] send_to_max failed: {e}")
         raise
     finally:
         if local_path and os.path.exists(local_path):

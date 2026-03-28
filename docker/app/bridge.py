@@ -1,45 +1,37 @@
 import asyncio
 import time
-from constants import MAX_PREFIX, TELEGRAM_PREFIX
+from constants import MAX_PREFIX, TELEGRAM_PREFIX, TAIL_LIMIT, ChatPair
 from helpers import strip_trailing_time
 from browser import BrowserManager
 from max_client import MaxClient
-from telegram_client import (
-    send,
-    send_document,
-    send_media_group,
-    send_photo,
-    send_video,
-)
+from telegram_client import send, send_document, send_media_group, send_photo, send_video
 from dedup_store import DedupStore
 from loguru import logger
-import os
-from constants import TAIL_LIMIT
 
-async def run_bridge():
-    logger.info("Запускаем bridge")
-    b = await BrowserManager.get()
-    page = b["page"]
-    maxc = MaxClient(page)
 
-    store = DedupStore()
+async def run_bridge(pair: ChatPair) -> None:
+    logger.info(f"[{pair.name}] Запускаем bridge: Max {pair.max_chat_id} → TG {pair.telegram_chat_id}")
+    b = await BrowserManager.get(pair.name, pair.max_url)
+    maxc = MaxClient(b["page"])
+
+    store = DedupStore(pair.dedup_path)
     await _warmup_dedup_if_needed(store, maxc)
     seen_count = store.count()
     last_count_refresh = time.monotonic()
 
-    logger.info(f"Дедупликация прогрета: {seen_count}. Слушаем сообщения...")
+    logger.info(f"[{pair.name}] Дедупликация прогрета: {seen_count}. Слушаем сообщения...")
     while True:
         try:
             seen_count, last_count_refresh = _refresh_seen_count_if_needed(
                 store, seen_count, last_count_refresh
             )
-            async with BrowserManager.lock:
+            async with b["lock"]:
                 msgs = await maxc.get_recent_messages_info(
                     limit=_dynamic_tail_limit(seen_count)
                 )
-            seen_count = await _process_messages(store, msgs, seen_count, maxc)
+            seen_count = await _process_messages(store, msgs, seen_count, maxc, pair)
         except Exception as e:
-            logger.error(f"Ошибка: {e}")
+            logger.error(f"[{pair.name}] Ошибка: {e}")
         await asyncio.sleep(1)
 
 
@@ -53,7 +45,6 @@ def _format_attachments_caption(msg: dict) -> str:
     return f"{MAX_PREFIX} {caption}" if caption else f"{MAX_PREFIX} [файл]"
 
 
-
 async def _download_or_url(maxc: MaxClient, url: str) -> str | bytes:
     """Пробует скачать файл через браузерный контекст Max; при ошибке возвращает URL."""
     try:
@@ -63,7 +54,7 @@ async def _download_or_url(maxc: MaxClient, url: str) -> str | bytes:
         return url
 
 
-async def _send_attachments(msg: dict, caption: str, maxc: MaxClient) -> None:
+async def _send_attachments(msg: dict, caption: str, maxc: MaxClient, pair: ChatPair) -> None:
     items = msg.get("items") or []
     cap = strip_trailing_time(caption)
     for i, item in enumerate(items):
@@ -74,35 +65,33 @@ async def _send_attachments(msg: dict, caption: str, maxc: MaxClient) -> None:
         name = item.get("name") or ""
         data = await _download_or_url(maxc, url)
         if item.get("kind") == "video":
-            send_video(data, c, filename=name or "video.mp4")
+            send_video(pair, data, c, filename=name or "video.mp4")
         else:
-            send_document(data, c, filename=name or "file")
+            send_document(pair, data, c, filename=name or "file")
 
 
-async def _send_to_telegram(msg: dict, message_text: str, maxc: MaxClient) -> None:
+async def _send_to_telegram(msg: dict, message_text: str, maxc: MaxClient, pair: ChatPair) -> None:
     if msg["type"] == "images":
-        caption = _format_images_caption(msg)
-        caption = strip_trailing_time(caption)
+        caption = strip_trailing_time(_format_images_caption(msg))
         urls = msg.get("urls") or []
         if len(urls) == 1:
-            send_photo(urls[0], caption)
+            send_photo(pair, urls[0], caption)
         else:
-            send_media_group(urls, caption)
+            send_media_group(pair, urls, caption)
         return
 
     if msg["type"] == "attachments":
-        cap = _format_attachments_caption(msg)
-        cap = strip_trailing_time(cap)
-        await _send_attachments(msg, cap, maxc)
+        cap = strip_trailing_time(_format_attachments_caption(msg))
+        await _send_attachments(msg, cap, maxc, pair)
         return
 
     if msg["type"] == "mixed":
         cap_img = strip_trailing_time(_format_images_caption(msg))
         image_urls = msg.get("image_urls") or []
         if len(image_urls) == 1:
-            send_photo(image_urls[0], cap_img)
+            send_photo(pair, image_urls[0], cap_img)
         elif len(image_urls) > 1:
-            send_media_group(image_urls, cap_img)
+            send_media_group(pair, image_urls, cap_img)
         for item in msg.get("attachments") or []:
             url = item.get("url")
             if not url:
@@ -110,12 +99,12 @@ async def _send_to_telegram(msg: dict, message_text: str, maxc: MaxClient) -> No
             name = item.get("name") or ""
             data = await _download_or_url(maxc, url)
             if item.get("kind") == "video":
-                send_video(data, None, filename=name or "video.mp4")
+                send_video(pair, data, None, filename=name or "video.mp4")
             else:
-                send_document(data, None, filename=name or "file")
+                send_document(pair, data, None, filename=name or "file")
         return
 
-    send(f"{MAX_PREFIX} {message_text}")
+    send(pair, f"{MAX_PREFIX} {message_text}")
 
 
 def _refresh_seen_count_if_needed(
@@ -150,6 +139,7 @@ async def _process_messages(
     msgs: list[dict],
     seen_count: int,
     maxc: MaxClient,
+    pair: ChatPair,
 ) -> int:
     for msg in reversed(msgs):
         message_text = msg.get("text") or msg.get("caption") or ""
@@ -160,7 +150,7 @@ async def _process_messages(
         if store.has(fp):
             continue
 
-        await _send_to_telegram(msg, message_text, maxc)
+        await _send_to_telegram(msg, message_text, maxc, pair)
 
         store.add(fp)
         seen_count += 1
