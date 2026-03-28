@@ -66,25 +66,34 @@ async def process(data):
     text = message.get("text") or message.get("caption") or ""
     if re.search(r"\d{2}:\d{2}$", text):
         text = re.sub(r"\s*\d{2}:\d{2}$", "", text)
-    photo_file_id = _extract_photo_file_id(message)
-    if not text and not photo_file_id:
+    file_id, media_type = _extract_file_info(message)
+    if not text and not file_id:
         raise ValueError("bad request")
 
-    await send_to_max(b, text=text, photo_file_id=photo_file_id)
+    await send_to_max(b, text=text, file_id=file_id, media_type=media_type)
 
 
-def _extract_photo_file_id(message: dict) -> str | None:
+def _extract_file_info(message: dict) -> tuple[str | None, str | None]:
+    """Возвращает (file_id, media_type) где media_type: 'photo', 'video', 'file' или None."""
     photos = message.get("photo") or []
     if photos:
-        largest = photos[-1]
-        return largest.get("file_id")
+        return photos[-1].get("file_id"), "photo"
+
+    video = message.get("video") or {}
+    if video.get("file_id"):
+        return video["file_id"], "video"
 
     document = message.get("document") or {}
-    mime_type = (document.get("mime_type") or "").lower()
-    if mime_type.startswith("image/"):
-        return document.get("file_id")
+    file_id = document.get("file_id")
+    if file_id:
+        mime_type = (document.get("mime_type") or "").lower()
+        if mime_type.startswith("image/"):
+            return file_id, "photo"
+        if mime_type.startswith("video/"):
+            return file_id, "video"
+        return file_id, "file"
 
-    return None
+    return None, None
 
 
 def _download_telegram_file(file_id: str) -> str:
@@ -112,17 +121,20 @@ def _download_telegram_file(file_id: str) -> str:
     return out_path
 
 
-async def send_to_max(b, text: str, photo_file_id: str | None = None) -> None:
-    local_photo_path = None
+async def send_to_max(b, text: str, file_id: str | None = None, media_type: str | None = None) -> None:
+    local_path = None
     page = b["page"]
     maxc = MaxClient(page)
     try:
-        if photo_file_id:
-            local_photo_path = _download_telegram_file(photo_file_id)
+        if file_id:
+            local_path = _download_telegram_file(file_id)
             logger.info(
-                f"Downloaded photo to {local_photo_path}, size: {os.path.getsize(local_photo_path)}"
+                f"Downloaded {media_type} to {local_path}, size: {os.path.getsize(local_path)}"
             )
-            await maxc.send_photo(local_photo_path, caption=text or "")
+            if media_type in ("photo", "video"):
+                await maxc.send_photo(local_path, caption=text or "")
+            else:
+                await maxc.send_file(local_path, caption=text or "")
         elif text:
             await maxc.send_message(text)
     except Exception as e:
@@ -132,5 +144,5 @@ async def send_to_max(b, text: str, photo_file_id: str | None = None) -> None:
             logger.error(f"send_to_max failed: {e}")
         raise
     finally:
-        if local_photo_path and os.path.exists(local_photo_path):
-            os.remove(local_photo_path)
+        if local_path and os.path.exists(local_path):
+            os.remove(local_path)
