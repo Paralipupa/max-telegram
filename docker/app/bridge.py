@@ -1,10 +1,9 @@
 import asyncio
+import time
 from constants import MAX_PREFIX, TELEGRAM_PREFIX
 from helpers import strip_trailing_time
 from browser import BrowserManager
 from max_client import MaxClient
-import asyncio
-import time
 from telegram_client import (
     send,
     send_document,
@@ -32,9 +31,10 @@ async def run_bridge():
             seen_count, last_count_refresh = _refresh_seen_count_if_needed(
                 store, seen_count, last_count_refresh
             )
-            msgs = await maxc.get_recent_messages_info(
-                limit=_dynamic_tail_limit(seen_count)
-            )
+            async with BrowserManager.lock:
+                msgs = await maxc.get_recent_messages_info(
+                    limit=_dynamic_tail_limit(seen_count)
+                )
             seen_count = await _process_messages(store, msgs, seen_count, maxc)
         except Exception as e:
             logger.error(f"Ошибка: {e}")

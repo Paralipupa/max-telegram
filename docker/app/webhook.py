@@ -57,10 +57,7 @@ async def catch_all(request: Request, path: str):
         content={
             "status": "error",
             "details": "Запрошенный путь не существует",
-            "query_params": qp,
             "path": path,
-            "host": request.headers.get("host"),
-            "headers": dict(request.headers),
         },
     )
 
@@ -71,23 +68,17 @@ async def process(data):
     maxc = MaxClient(page)
     chat_id = MAX_CHAT_ID
 
-    await maxc.open_chat(chat_id)
-
     message = data.get("message") or {}
-    from_name = (
-        message.get("from", {}).get("first_name")
-        if not message.get("from", {}).get("is_bot")
-        else None
-    )
     text = message.get("text") or message.get("caption") or ""
     text = strip_trailing_time(text)
-    # if from_name:
-    #     text = f"{from_name}: {text}"
     file_id, media_type = _extract_file_info(message)
     if not text and not file_id:
         raise ValueError("bad request")
 
-    if text or file_id:
+    # Весь цикл open_chat → send под одним локом: bridge не должен читать DOM
+    # пока webhook делает page.goto() или отправляет сообщение
+    async with BrowserManager.lock:
+        await maxc.open_chat(chat_id)
         await send_to_max(b, text=text, file_id=file_id, media_type=media_type)
 
 

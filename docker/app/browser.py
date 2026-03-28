@@ -1,8 +1,14 @@
+import asyncio
 import os
 from playwright.async_api import async_playwright
 from constants import PAGE_URL, HEADLESS
+
+
 class BrowserManager:
     _instance = None
+    # Лок предотвращает одновременное использование страницы bridge и webhook:
+    # webhook делает page.goto() пока bridge читает DOM → таймаут wait_for_selector
+    lock: asyncio.Lock = asyncio.Lock()
 
     @classmethod
     async def get(cls):
