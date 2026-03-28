@@ -10,7 +10,8 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN apt-get update && apt-get install -y wget libnss3 \
+# sqlite3 — CLI для просмотра и правки БД (docker exec … sqlite3 /data/dedup.sqlite3)
+RUN apt-get update && apt-get install -y wget sqlite3 libnss3 \
     libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 \
     libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libpangocairo-1.0-0 \
     libpango-1.0-0 libcairo2 libatspi2.0-0 libxshmfence1 && apt-get clean \
