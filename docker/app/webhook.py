@@ -9,6 +9,7 @@ from fastapi import status
 import tempfile
 from constants import WEBHOOK_PATH, MAX_CHAT_ID, TELEGRAM_BOT_TOKEN
 from helpers import strip_trailing_time
+from collage import make_collage
 
 app = FastAPI()
 
@@ -96,28 +97,46 @@ async def _delayed_send_media_group(group_id: str) -> None:
         "",
     )
 
-    # В медиагруппе берём наименьшее разрешение (первый элемент) — Max всё равно загружает
-    # превью, а меньший размер ускоряет загрузку и снижает нагрузку на браузер
+    # В медиагруппе берём наилучшее качество ≤ 800px — достаточно для превью в Max,
+    # не перегружает браузер загрузкой оригиналов
     photo_ids = []
     for msg in messages:
         photos = msg.get("photo") or []
-        if photos:
-            photo_ids.append(photos[0]["file_id"])
+        fid = _pick_photo_id(photos, max_width=800)
+        if fid:
+            photo_ids.append(fid)
 
     if not photo_ids:
         return
 
-    logger.info(f"Отправляем медиагруппу {group_id}: {len(photo_ids)} фото")
+    logger.info(f"Медиагруппа {group_id}: скачиваем {len(photo_ids)} фото для коллажа")
 
-    b = await BrowserManager.get()
-    page = b["page"]
-    maxc = MaxClient(page)
+    # Скачиваем все фото, собираем коллаж, отправляем одним изображением
+    local_paths: list[str] = []
+    collage_path: str | None = None
+    try:
+        for fid in photo_ids:
+            local_paths.append(_download_telegram_file(fid))
 
-    async with BrowserManager.lock:
-        await maxc.open_chat(MAX_CHAT_ID)
-        for i, file_id in enumerate(photo_ids):
-            # Caption только к первому фото
-            await send_to_max(b, text=caption if i == 0 else "", file_id=file_id, media_type="photo")
+        collage_bytes = make_collage(local_paths)
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+        tmp.write(collage_bytes)
+        tmp.close()
+        collage_path = tmp.name
+
+        b = await BrowserManager.get()
+        page = b["page"]
+        maxc = MaxClient(page)
+
+        async with BrowserManager.lock:
+            await maxc.open_chat(MAX_CHAT_ID)
+            await maxc.send_photo(collage_path, caption=caption or "")
+    finally:
+        for p in local_paths:
+            if os.path.exists(p):
+                os.remove(p)
+        if collage_path and os.path.exists(collage_path):
+            os.remove(collage_path)
 
 
 async def _process_single_message(message: dict) -> None:
@@ -139,11 +158,28 @@ async def _process_single_message(message: dict) -> None:
         await send_to_max(b, text=text, file_id=file_id, media_type=media_type)
 
 
+def _pick_photo_id(photos: list[dict], max_width: int | None = None) -> str | None:
+    """
+    Выбирает file_id фото по размеру.
+    max_width=None — максимальное разрешение (для одиночного фото).
+    max_width=N    — наилучшее качество среди фото шириной ≤ N (для медиагруппы).
+    """
+    if not photos:
+        return None
+    if max_width is None:
+        best = max(photos, key=lambda p: p.get("width", 0) * p.get("height", 0))
+    else:
+        candidates = [p for p in photos if p.get("width", 0) <= max_width]
+        pool = candidates if candidates else photos
+        best = max(pool, key=lambda p: p.get("width", 0) * p.get("height", 0))
+    return best.get("file_id")
+
+
 def _extract_file_info(message: dict) -> tuple[str | None, str | None]:
     """Возвращает (file_id, media_type) где media_type: 'photo', 'video', 'file' или None."""
     photos = message.get("photo") or []
     if photos:
-        return photos[-1].get("file_id"), "photo"
+        return _pick_photo_id(photos), "photo"
 
     video = message.get("video") or {}
     if video.get("file_id"):

@@ -5,14 +5,18 @@ import uvicorn
 from bridge import run_bridge
 from webhook import app
 from browser import BrowserManager
-
+from loguru import logger
 _DEDUP_PATH = "/data/dedup.sqlite3"
 
 
 async def main():
     # Сбрасываем дедупликацию при каждом запуске контейнера
     if os.path.exists(_DEDUP_PATH):
-        os.remove(_DEDUP_PATH)
+        logger.info(f"Сбрасываем дедупликацию: {_DEDUP_PATH}")
+        try:
+            os.remove(_DEDUP_PATH)
+        except Exception as e:
+            logger.error(f"Ошибка при сбросе дедупликации: {e}")
 
     await BrowserManager.get()
 
