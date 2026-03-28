@@ -3,12 +3,20 @@
 import io
 from PIL import Image
 
-COLLAGE_WIDTH = 1200  # итоговая ширина коллажа в пикселях
-GAP = 4               # зазор между фото
+# Итоговая ширина коллажа в пикселях
+COLLAGE_WIDTH = 1200
+# Зазор между фото
+GAP = 4
+# Минимальная высота строки (защита от слишком тонких строк при экстремальных пропорциях)
+MIN_ROW_HEIGHT = 80
+# Максимум фото в строке (кроме одиночного первого)
+MAX_PER_ROW = 3
 
 
 def _layout(n: int) -> list[list[int]]:
-    """Разбивка N фото по строкам (индексы)."""
+    """Разбивка N фото по строкам (индексы).
+    Первое фото отдельно (на всю ширину) для N=3,5,7+.
+    """
     if n == 1:
         return [[0]]
     if n == 2:
@@ -21,25 +29,34 @@ def _layout(n: int) -> list[list[int]]:
         return [[0], [1, 2], [3, 4]]
     if n == 6:
         return [[0, 1, 2], [3, 4, 5]]
-    # 7+: первое фото на всю ширину, остальные по 3 в строку
+    # 7+: первое фото на всю ширину, остальные по MAX_PER_ROW в строку
     rows: list[list[int]] = [[0]]
     rest = list(range(1, n))
-    for i in range(0, len(rest), 3):
-        rows.append(rest[i : i + 3])
+    for i in range(0, len(rest), MAX_PER_ROW):
+        rows.append(rest[i : i + MAX_PER_ROW])
     return rows
 
 
 def _make_row(images: list[Image.Image], width: int) -> Image.Image:
-    """Склеивает фото в горизонтальную полосу заданной ширины."""
+    """Склеивает фото в горизонтальную полосу заданной ширины.
+
+    Высота строки рассчитывается так, чтобы все фото вписались по ширине
+    с сохранением пропорций: row_h = (width - gaps) / sum(w_i/h_i).
+    """
     n = len(images)
     total_aspect = sum(im.width / im.height for im in images)
-    row_h = int((width - GAP * (n - 1)) / total_aspect)
+    row_h = max(MIN_ROW_HEIGHT, int((width - GAP * (n - 1)) / total_aspect))
+
+    # Вычисляем ширину каждого фото и остаток отдаём последнему (компенсация округления)
+    widths = [int(im.width / im.height * row_h) for im in images]
+    used = sum(widths) + GAP * (n - 1)
+    widths[-1] += width - used  # last photo absorbs rounding delta
 
     row = Image.new("RGB", (width, row_h))
     x = 0
-    for i, im in enumerate(images):
-        w = width - x if i == n - 1 else int(im.width / im.height * row_h)
-        row.paste(im.resize((w, row_h), Image.LANCZOS), (x, 0))
+    for im, w in zip(images, widths):
+        w = max(1, w)  # защита от нулевой ширины
+        row.paste(im.resize((w, row_h), Image.Resampling.LANCZOS), (x, 0))
         x += w + GAP
     return row
 
