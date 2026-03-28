@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from fastapi import status
 import tempfile
 from constants import WEBHOOK_PATH, MAX_CHAT_ID, TELEGRAM_BOT_TOKEN
-from helpers import strip_trailing_time
+from helpers import strip_trailing_time, apply_text_links
 from collage import make_collage
 
 app = FastAPI()
@@ -92,10 +92,13 @@ async def _delayed_send_media_group(group_id: str) -> None:
         return
 
     # Caption берём из первого сообщения, которое его содержит
-    caption = next(
-        (strip_trailing_time(m.get("caption") or "") for m in messages if m.get("caption")),
-        "",
-    )
+    caption = ""
+    for m in messages:
+        raw = m.get("caption") or ""
+        if raw:
+            entities = m.get("caption_entities") or []
+            caption = strip_trailing_time(apply_text_links(raw, entities))
+            break
 
     # В медиагруппе берём наилучшее качество ≤ 800px — достаточно для превью в Max,
     # не перегружает браузер загрузкой оригиналов
@@ -146,7 +149,8 @@ async def _process_single_message(message: dict) -> None:
     maxc = MaxClient(page)
 
     text = message.get("text") or message.get("caption") or ""
-    text = strip_trailing_time(text)
+    entities = message.get("entities") or message.get("caption_entities") or []
+    text = strip_trailing_time(apply_text_links(text, entities))
     file_id, media_type = _extract_file_info(message)
     if not text and not file_id:
         raise ValueError("bad request")
