@@ -161,5 +161,6 @@ async def _process_messages(
         await _send_to_telegram(msg, message_text, maxc)
 
         store.add(fp)
+        logger.info(f"Отправлено сообщение: {message_text} - {fp}")
         seen_count += 1
     return seen_count

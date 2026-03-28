@@ -8,6 +8,7 @@ from processing import process, log_background_task
 
 app = FastAPI()
 
+logger.info(f"WEBHOOK_PATH: {WEBHOOK_PATH}")
 
 @app.post(WEBHOOK_PATH, response_class=PlainTextResponse)
 async def hook(request: Request) -> str:
