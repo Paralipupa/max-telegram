@@ -12,6 +12,11 @@ from helpers import strip_trailing_time
 
 app = FastAPI()
 
+# Буфер медиагрупп: group_id → список сообщений.
+# После MEDIA_GROUP_TIMEOUT секунд все фото группы отправляются вместе.
+_media_group_buffer: dict[str, list[dict]] = {}
+MEDIA_GROUP_TIMEOUT = 2.0  # секунды ожидания хвостовых фото
+
 
 def _log_background_task(task: asyncio.Task) -> None:
     try:
@@ -63,12 +68,64 @@ async def catch_all(request: Request, path: str):
 
 
 async def process(data):
+    message = data.get("message") or {}
+    media_group_id = message.get("media_group_id")
+
+    if media_group_id:
+        # Первое фото группы — откладываем отправку, последующие просто буферизуем
+        is_first = media_group_id not in _media_group_buffer
+        _media_group_buffer.setdefault(media_group_id, []).append(message)
+        if is_first:
+            t = asyncio.create_task(_delayed_send_media_group(media_group_id))
+            t.add_done_callback(_log_background_task)
+        return
+
+    await _process_single_message(message)
+
+
+async def _delayed_send_media_group(group_id: str) -> None:
+    """Ждёт MEDIA_GROUP_TIMEOUT секунд, затем отправляет все фото группы последовательно."""
+    await asyncio.sleep(MEDIA_GROUP_TIMEOUT)
+    messages = _media_group_buffer.pop(group_id, [])
+    if not messages:
+        return
+
+    # Caption берём из первого сообщения, которое его содержит
+    caption = next(
+        (strip_trailing_time(m.get("caption") or "") for m in messages if m.get("caption")),
+        "",
+    )
+
+    # В медиагруппе берём наименьшее разрешение (первый элемент) — Max всё равно загружает
+    # превью, а меньший размер ускоряет загрузку и снижает нагрузку на браузер
+    photo_ids = []
+    for msg in messages:
+        photos = msg.get("photo") or []
+        if photos:
+            photo_ids.append(photos[0]["file_id"])
+
+    if not photo_ids:
+        return
+
+    logger.info(f"Отправляем медиагруппу {group_id}: {len(photo_ids)} фото")
+
     b = await BrowserManager.get()
     page = b["page"]
     maxc = MaxClient(page)
-    chat_id = MAX_CHAT_ID
 
-    message = data.get("message") or {}
+    async with BrowserManager.lock:
+        await maxc.open_chat(MAX_CHAT_ID)
+        for i, file_id in enumerate(photo_ids):
+            # Caption только к первому фото
+            await send_to_max(b, text=caption if i == 0 else "", file_id=file_id, media_type="photo")
+
+
+async def _process_single_message(message: dict) -> None:
+    """Обрабатывает одиночное (не медиагрупповое) сообщение."""
+    b = await BrowserManager.get()
+    page = b["page"]
+    maxc = MaxClient(page)
+
     text = message.get("text") or message.get("caption") or ""
     text = strip_trailing_time(text)
     file_id, media_type = _extract_file_info(message)
@@ -78,7 +135,7 @@ async def process(data):
     # Весь цикл open_chat → send под одним локом: bridge не должен читать DOM
     # пока webhook делает page.goto() или отправляет сообщение
     async with BrowserManager.lock:
-        await maxc.open_chat(chat_id)
+        await maxc.open_chat(MAX_CHAT_ID)
         await send_to_max(b, text=text, file_id=file_id, media_type=media_type)
 
 
