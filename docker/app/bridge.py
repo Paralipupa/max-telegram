@@ -10,7 +10,7 @@ from telegram_client import (
     send_photo,
     send_video,
 )
-from dedup_store import DedupStore, _normalize_url_for_dedup
+from dedup_store import DedupStore
 from loguru import logger
 import os
 from browser import TAIL_LIMIT
@@ -70,9 +70,7 @@ def _send_attachments(msg: dict, caption: str) -> None:
             send_document(url, c)
 
 
-def _send_to_telegram(
-    msg: dict, message_text: str, *, dedup_key: str | None = None
-) -> None:
+def _send_to_telegram(msg: dict, message_text: str) -> None:
     if msg["type"] == "images":
         caption = _format_images_caption(msg)
         caption = _strip_trailing_time(caption)
@@ -92,8 +90,6 @@ def _send_to_telegram(
     if msg["type"] == "mixed":
         cap_img = _strip_trailing_time(_format_images_caption(msg))
         image_urls = msg.get("image_urls") or []
-        # Same file often appears as <img src> and as <a href>; avoid photo + document duplicate.
-        already_sent = {_normalize_url_for_dedup(u) for u in image_urls if u}
         if len(image_urls) == 1:
             send_photo(image_urls[0], cap_img)
         elif len(image_urls) > 1:
@@ -102,17 +98,13 @@ def _send_to_telegram(
             url = item.get("url")
             if not url:
                 continue
-            nurl = _normalize_url_for_dedup(url)
-            if not nurl or nurl in already_sent:
-                continue
-            already_sent.add(nurl)
             if item.get("kind") == "video":
                 send_video(url, None)
             else:
                 send_document(url, None)
         return
 
-    send("MAX: " + message_text, dedup_key=dedup_key)
+    send("MAX: " + message_text)
 
 
 def _refresh_seen_count_if_needed(
@@ -147,23 +139,18 @@ def _process_messages(
     msgs: list[dict],
     seen_count: int,
 ) -> int:
-    batch_added: set[str] = set()
     for msg in reversed(msgs):
         message_text = msg.get("text") or msg.get("caption") or ""
         if re.search(r'\d{2}:\d{2}$', message_text):
             message_text = re.sub(r'\s*\d{2}:\d{2}$', '', message_text)
         if "TELEGRAM:" in message_text:
             continue
-        # Outbound relay format; echo back into Max (or DOM) must not re-forward to Telegram.
-        if message_text.strip().startswith("MAX:"):
-            continue
         fp = store.fingerprint(msg)
-        if not store.claim_fingerprint(fp):
-            if fp in batch_added:
-                continue
+        if store.has(fp):
             break
-        batch_added.add(fp)
-        logger.info(f"Sending message: {message_text} - {fp}")
-        _send_to_telegram(msg, message_text, dedup_key=fp)
+
+        _send_to_telegram(msg, message_text)
+
+        store.add(fp)
         seen_count += 1
     return seen_count

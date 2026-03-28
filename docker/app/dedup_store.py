@@ -1,43 +1,9 @@
 import hashlib
 import json
 import os
-import re
 import sqlite3
 import time
 from typing import Any, Iterable
-from urllib.parse import urlparse, urlunparse
-
-
-def _strip_trailing_time(s: str) -> str:
-    """Match bridge display logic: DOM may add/remove HH:MM suffix between polls."""
-    t = s.strip()
-    if re.search(r"\d{2}:\d{2}$", t):
-        return re.sub(r"\s*\d{2}:\d{2}$", "", t).strip()
-    return t
-
-
-def _collapse_ws(s: str) -> str:
-    return re.sub(r"\s+", " ", s).strip()
-
-
-def _normalize_url_for_dedup(url: str) -> str:
-    """Strip volatile query/fragment (signed CDN URLs change every poll)."""
-    u = (url or "").strip()
-    if not u:
-        return ""
-    if u.startswith("blob:") or u.startswith("data:"):
-        return u[:256]
-    p = urlparse(u)
-    return urlunparse((p.scheme, p.netloc, p.path, "", "", ""))
-
-
-def _norm_caption(s: str) -> str:
-    return _collapse_ws(_strip_trailing_time(s))
-
-
-def _norm_text(s: str) -> str:
-    return _collapse_ws(_strip_trailing_time(s))
-
 
 class DedupStore:
     """
@@ -78,9 +44,7 @@ class DedupStore:
 
     @staticmethod
     def fingerprint(message: dict[str, Any]) -> str:
-        # stable_id from DOM is often a React/recycled id and changes between polls — breaks dedup.
-        m = {k: v for k, v in message.items() if k != "stable_id"}
-        normalized = DedupStore._normalize_message(m)
+        normalized = DedupStore._normalize_message(message)
         payload = json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return hashlib.sha256(payload).hexdigest()
 
@@ -88,10 +52,7 @@ class DedupStore:
     def _normalize_message(message: dict[str, Any]) -> dict[str, Any]:
         t = message.get("type")
         if t == "text":
-            return {
-                "type": "text",
-                "text": _norm_text((message.get("text") or "").strip()),
-            }
+            return {"type": "text", "text": (message.get("text") or "").strip()}
         if t in ("image", "images"):
             urls: Iterable[str]
             if "urls" in message and isinstance(message["urls"], list):
@@ -99,22 +60,21 @@ class DedupStore:
             else:
                 u = message.get("url")
                 urls = [str(u)] if u else []
-            norm_urls = sorted({_normalize_url_for_dedup(u) for u in urls if u})
             return {
                 "type": "images",
-                "urls": norm_urls,
-                "caption": _norm_caption((message.get("caption") or "").strip()),
+                "urls": sorted(urls),
+                "caption": (message.get("caption") or "").strip(),
             }
         if t == "attachments":
             items = message.get("items") or []
             norm_items: list[dict[str, str]] = []
             for it in sorted(
                 [x for x in items if isinstance(x, dict)],
-                key=lambda x: _normalize_url_for_dedup(str(x.get("url") or "")),
+                key=lambda x: str(x.get("url") or ""),
             ):
                 norm_items.append(
                     {
-                        "url": _normalize_url_for_dedup(str(it.get("url") or "").strip()),
+                        "url": str(it.get("url") or "").strip(),
                         "kind": str(it.get("kind") or "document"),
                         "name": (str(it.get("name") or "")).strip(),
                     }
@@ -122,23 +82,19 @@ class DedupStore:
             return {
                 "type": "attachments",
                 "items": norm_items,
-                "caption": _norm_caption((message.get("caption") or "").strip()),
+                "caption": (message.get("caption") or "").strip(),
             }
         if t == "mixed":
-            imgs = [
-                _normalize_url_for_dedup(str(u))
-                for u in (message.get("image_urls") or [])
-                if u
-            ]
+            imgs = [str(u) for u in (message.get("image_urls") or []) if u]
             att = message.get("attachments") or []
             norm_att: list[dict[str, str]] = []
             for it in sorted(
                 [x for x in att if isinstance(x, dict)],
-                key=lambda x: _normalize_url_for_dedup(str(x.get("url") or "")),
+                key=lambda x: str(x.get("url") or ""),
             ):
                 norm_att.append(
                     {
-                        "url": _normalize_url_for_dedup(str(it.get("url") or "").strip()),
+                        "url": str(it.get("url") or "").strip(),
                         "kind": str(it.get("kind") or "document"),
                         "name": (str(it.get("name") or "")).strip(),
                     }
@@ -147,28 +103,9 @@ class DedupStore:
                 "type": "mixed",
                 "image_urls": sorted(imgs),
                 "attachments": norm_att,
-                "caption": _norm_caption((message.get("caption") or "").strip()),
+                "caption": (message.get("caption") or "").strip(),
             }
         return {"type": str(t or "unknown"), "raw": message}
-
-    def claim_fingerprint(self, fingerprint: str) -> bool:
-        """Atomically insert fingerprint. True if this caller was first (safe across processes)."""
-        now = int(time.time())
-        conn = self._connect()
-        try:
-            conn.execute("BEGIN IMMEDIATE")
-            conn.execute(
-                "INSERT INTO seen(fingerprint, created_at) VALUES(?, ?)",
-                (fingerprint, now),
-            )
-            conn.commit()
-        except sqlite3.IntegrityError:
-            conn.rollback()
-            return False
-        finally:
-            conn.close()
-        self.prune()
-        return True
 
     def has(self, fingerprint: str) -> bool:
         with self._connect() as conn:
