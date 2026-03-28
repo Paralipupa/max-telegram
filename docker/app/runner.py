@@ -6,15 +6,13 @@ from bridge import run_bridge
 from webhook import app
 from browser import BrowserManager
 from loguru import logger
-_DEDUP_PATH = "/data/dedup.sqlite3"
-
+from constants import DEDUP_PATH
 
 async def main():
-    # Сбрасываем дедупликацию при каждом запуске контейнера
-    if os.path.exists(_DEDUP_PATH):
-        logger.info(f"Сбрасываем дедупликацию: {_DEDUP_PATH}")
+    if os.path.exists(DEDUP_PATH):
+        logger.info(f"Сбрасываем дедупликацию: {DEDUP_PATH}")
         try:
-            os.remove(_DEDUP_PATH)
+            os.remove(DEDUP_PATH)
         except Exception as e:
             logger.error(f"Ошибка при сбросе дедупликации: {e}")
 
@@ -23,7 +21,6 @@ async def main():
     config = uvicorn.Config(app, host="0.0.0.0", port=8081, log_level="info")
     server = uvicorn.Server(config)
 
-    # Оба компонента в одном event loop — asyncio.Lock в BrowserManager работает корректно
     await asyncio.gather(
         run_bridge(),
         server.serve(),

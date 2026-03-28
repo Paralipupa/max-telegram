@@ -1,7 +1,7 @@
 import requests
 from constants import (
     TOKEN,
-    CHAT_ID,
+    TELEGRAM_CHAT_ID,
     TELEGRAM_SEND_MESSAGE_URL,
     TELEGRAM_SEND_PHOTO_URL,
     TELEGRAM_SEND_MEDIA_GROUP_URL,
@@ -14,13 +14,13 @@ def send(text):
     """Отправляет текстовое сообщение в Telegram."""
     requests.post(
         TELEGRAM_SEND_MESSAGE_URL.format(token=TOKEN),
-        json={"chat_id": CHAT_ID, "text": text},
+        json={"chat_id": TELEGRAM_CHAT_ID, "text": text},
     )
 
 
 def send_photo(photo_url, caption=None):
     """Отправляет фото в Telegram по URL (прямая ссылка)."""
-    data = {"chat_id": CHAT_ID, "photo": photo_url}
+    data = {"chat_id": TELEGRAM_CHAT_ID, "photo": photo_url}
     if caption:
         data["caption"] = caption
     requests.post(TELEGRAM_SEND_PHOTO_URL.format(token=TOKEN), json=data)
@@ -31,7 +31,7 @@ def send_document(
 ) -> None:
     """Отправляет файл в Telegram: по URL или как bytes (multipart)."""
     if isinstance(document, bytes):
-        data: dict = {"chat_id": CHAT_ID}
+        data: dict = {"chat_id": TELEGRAM_CHAT_ID}
         if caption:
             data["caption"] = caption
         requests.post(
@@ -40,7 +40,7 @@ def send_document(
             files={"document": (filename, document)},
         )
     else:
-        data = {"chat_id": CHAT_ID, "document": document}
+        data = {"chat_id": TELEGRAM_CHAT_ID, "document": document}
         if caption:
             data["caption"] = caption
         requests.post(TELEGRAM_SEND_DOCUMENT_URL.format(token=TOKEN), json=data)
@@ -51,7 +51,7 @@ def send_video(
 ) -> None:
     """Отправляет видео в Telegram: по URL или как bytes (multipart)."""
     if isinstance(video, bytes):
-        data: dict = {"chat_id": CHAT_ID}
+        data: dict = {"chat_id": TELEGRAM_CHAT_ID}
         if caption:
             data["caption"] = caption
         requests.post(
@@ -60,7 +60,7 @@ def send_video(
             files={"video": (filename, video)},
         )
     else:
-        data = {"chat_id": CHAT_ID, "video": video}
+        data = {"chat_id": TELEGRAM_CHAT_ID, "video": video}
         if caption:
             data["caption"] = caption
         requests.post(TELEGRAM_SEND_VIDEO_URL.format(token=TOKEN), json=data)
@@ -79,5 +79,5 @@ def send_media_group(photo_urls: list[str], caption: str | None = None) -> None:
         media.append(item)
     requests.post(
         TELEGRAM_SEND_MEDIA_GROUP_URL.format(token=TOKEN),
-        json={"chat_id": CHAT_ID, "media": media},
+        json={"chat_id": TELEGRAM_CHAT_ID, "media": media},
     )
