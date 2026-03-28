@@ -5,6 +5,8 @@ import sqlite3
 import time
 from typing import Any, Iterable
 from urllib.parse import urlparse, urlunparse
+from loguru import logger
+
 
 class DedupStore:
     """
@@ -26,12 +28,15 @@ class DedupStore:
         self._init()
 
     def _connect(self) -> sqlite3.Connection:
+        logger.info(f"Подключаемся к базе данных: {self.db_path}")
         conn = sqlite3.connect(self.db_path)
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=NORMAL;")
+        logger.info(f"Подключено к базе данных: {self.db_path}")
         return conn
 
     def _init(self) -> None:
+        logger.info(f"Инициализируем дедупликацию: {self.db_path}")
         with self._connect() as conn:
             conn.execute(
                 """
@@ -41,12 +46,17 @@ class DedupStore:
                 )
                 """
             )
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_seen_created_at ON seen(created_at)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_seen_created_at ON seen(created_at)"
+            )
+        logger.info(f"Инициализировано дедупликацию: {self.db_path}")
 
     @staticmethod
     def fingerprint(message: dict[str, Any]) -> str:
         normalized = DedupStore._normalize_message(message)
-        payload = json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        payload = json.dumps(
+            normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
         return hashlib.sha256(payload).hexdigest()
 
     @staticmethod
@@ -105,12 +115,18 @@ class DedupStore:
                         "kind": str(it.get("kind") or "document"),
                     }
                 )
-            return {"type": "mixed", "image_urls": sorted(imgs), "attachments": norm_att}
+            return {
+                "type": "mixed",
+                "image_urls": sorted(imgs),
+                "attachments": norm_att,
+            }
         return {"type": str(t or "unknown"), "raw": message}
 
     def has(self, fingerprint: str) -> bool:
         with self._connect() as conn:
-            row = conn.execute("SELECT 1 FROM seen WHERE fingerprint = ? LIMIT 1", (fingerprint,)).fetchone()
+            row = conn.execute(
+                "SELECT 1 FROM seen WHERE fingerprint = ? LIMIT 1", (fingerprint,)
+            ).fetchone()
             return row is not None
 
     def count(self) -> int:
@@ -132,7 +148,9 @@ class DedupStore:
         with self._connect() as conn:
             conn.execute("DELETE FROM seen WHERE created_at < ?", (cutoff,))
             # cap total size
-            extra = conn.execute("SELECT COUNT(*) FROM seen").fetchone()[0] - int(self.max_entries)
+            extra = conn.execute("SELECT COUNT(*) FROM seen").fetchone()[0] - int(
+                self.max_entries
+            )
             if extra > 0:
                 conn.execute(
                     """

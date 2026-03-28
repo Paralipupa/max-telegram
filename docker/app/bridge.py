@@ -17,6 +17,7 @@ import os
 from constants import TAIL_LIMIT
 
 async def run_bridge():
+    logger.info("Запускаем bridge")
     b = await BrowserManager.get()
     page = b["page"]
     maxc = MaxClient(page)
@@ -26,6 +27,7 @@ async def run_bridge():
     seen_count = store.count()
     last_count_refresh = time.monotonic()
 
+    logger.info(f"Дедупликация прогрета: {seen_count}. Слушаем сообщения...")
     while True:
         try:
             seen_count, last_count_refresh = _refresh_seen_count_if_needed(
