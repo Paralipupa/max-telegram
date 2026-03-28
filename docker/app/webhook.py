@@ -38,13 +38,29 @@ async def hook(request: Request) -> str:
     "/{path:path}",
     methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
 )
-async def catch_all(path: str):
-    logger.info(f"Запрошенный путь /{path} не существует")
+async def catch_all(request: Request, path: str):
+    logger.info(
+        f"Запрошенный путь /{path} не существует. "
+        f"host: {request.headers.get('host')} "
+        f"user-agent: {request.headers.get('user-agent')} "
+        f"x-forwarded-for: {request.headers.get('x-forwarded-for')} "
+        f"x-forwarded-host: {request.headers.get('x-forwarded-host')} "
+        f"x-forwarded-proto: {request.headers.get('x-forwarded-proto')} "
+        f"x-forwarded-port: {request.headers.get('x-forwarded-port')} "
+        f"x-forwarded-server: {request.headers.get('x-forwarded-server')} "
+        f"x-forwarded-client-ip: {request.headers.get('x-forwarded-client-ip')} "
+        f"x-forwarded-client-port: {request.headers.get('x-forwarded-client-port')} "
+    )
+    qp = dict(request.query_params)
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={
             "status": "error",
-            "details": f"Запрошенный путь /{path} не существует",
+            "details": "Запрошенный путь не существует",
+            "query_params": qp,
+            "path": path,
+            "host": request.headers.get("host"),
+            "headers": dict(request.headers),
         },
     )
 
