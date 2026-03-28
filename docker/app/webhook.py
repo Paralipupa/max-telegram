@@ -7,15 +7,10 @@ from loguru import logger
 from fastapi.responses import JSONResponse
 from fastapi import status
 import tempfile
-import re
-
-MAX_CHAT_ID = os.getenv("MAX_CHAT_ID")
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-WEBHOOK_PATH = f"/bot{TELEGRAM_BOT_TOKEN}/"
+from constants import WEBHOOK_PATH, MAX_CHAT_ID, TELEGRAM_BOT_TOKEN
+from helpers import strip_trailing_time
 
 app = FastAPI()
-
-logger.info(f"WEBHOOK_PATH: {WEBHOOK_PATH}")
 
 
 def _log_background_task(task: asyncio.Task) -> None:
@@ -64,8 +59,7 @@ async def process(data):
 
     message = data.get("message") or {}
     text = message.get("text") or message.get("caption") or ""
-    if re.search(r"\d{2}:\d{2}$", text):
-        text = re.sub(r"\s*\d{2}:\d{2}$", "", text)
+    text = strip_trailing_time(text)
     file_id, media_type = _extract_file_info(message)
     if not text and not file_id:
         raise ValueError("bad request")
@@ -121,7 +115,9 @@ def _download_telegram_file(file_id: str) -> str:
     return out_path
 
 
-async def send_to_max(b, text: str, file_id: str | None = None, media_type: str | None = None) -> None:
+async def send_to_max(
+    b, text: str, file_id: str | None = None, media_type: str | None = None
+) -> None:
     local_path = None
     page = b["page"]
     maxc = MaxClient(page)

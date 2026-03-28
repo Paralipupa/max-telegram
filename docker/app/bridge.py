@@ -1,5 +1,6 @@
 import asyncio
 from constants import MAX_PREFIX, TELEGRAM_PREFIX
+from helpers import strip_trailing_time
 from browser import BrowserManager
 from max_client import MaxClient
 import asyncio
@@ -14,8 +15,7 @@ from telegram_client import (
 from dedup_store import DedupStore
 from loguru import logger
 import os
-from browser import TAIL_LIMIT
-import re
+from constants import TAIL_LIMIT
 
 async def run_bridge():
     b = await BrowserManager.get()
@@ -51,11 +51,6 @@ def _format_attachments_caption(msg: dict) -> str:
     return f"{MAX_PREFIX} {caption}" if caption else f"{MAX_PREFIX} [файл]"
 
 
-def _strip_trailing_time(caption: str) -> str:
-    if re.search(r"\d{2}:\d{2}$", caption):
-        return re.sub(r"\s*\d{2}:\d{2}$", "", caption)
-    return caption
-
 
 async def _download_or_url(maxc: MaxClient, url: str) -> str | bytes:
     """Пробует скачать файл через браузерный контекст Max; при ошибке возвращает URL."""
@@ -68,7 +63,7 @@ async def _download_or_url(maxc: MaxClient, url: str) -> str | bytes:
 
 async def _send_attachments(msg: dict, caption: str, maxc: MaxClient) -> None:
     items = msg.get("items") or []
-    cap = _strip_trailing_time(caption)
+    cap = strip_trailing_time(caption)
     for i, item in enumerate(items):
         url = item.get("url")
         if not url:
@@ -85,7 +80,7 @@ async def _send_attachments(msg: dict, caption: str, maxc: MaxClient) -> None:
 async def _send_to_telegram(msg: dict, message_text: str, maxc: MaxClient) -> None:
     if msg["type"] == "images":
         caption = _format_images_caption(msg)
-        caption = _strip_trailing_time(caption)
+        caption = strip_trailing_time(caption)
         urls = msg.get("urls") or []
         if len(urls) == 1:
             send_photo(urls[0], caption)
@@ -95,12 +90,12 @@ async def _send_to_telegram(msg: dict, message_text: str, maxc: MaxClient) -> No
 
     if msg["type"] == "attachments":
         cap = _format_attachments_caption(msg)
-        cap = _strip_trailing_time(cap)
+        cap = strip_trailing_time(cap)
         await _send_attachments(msg, cap, maxc)
         return
 
     if msg["type"] == "mixed":
-        cap_img = _strip_trailing_time(_format_images_caption(msg))
+        cap_img = strip_trailing_time(_format_images_caption(msg))
         image_urls = msg.get("image_urls") or []
         if len(image_urls) == 1:
             send_photo(image_urls[0], cap_img)
@@ -156,8 +151,7 @@ async def _process_messages(
 ) -> int:
     for msg in reversed(msgs):
         message_text = msg.get("text") or msg.get("caption") or ""
-        if re.search(r'\d{2}:\d{2}$', message_text):
-            message_text = re.sub(r'\s*\d{2}:\d{2}$', '', message_text)
+        message_text = strip_trailing_time(message_text)
         if TELEGRAM_PREFIX in message_text:
             continue
         fp = store.fingerprint(msg)

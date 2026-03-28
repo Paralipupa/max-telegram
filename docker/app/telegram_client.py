@@ -1,15 +1,13 @@
 import requests
-import os
-
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-MAX_CHAT_ID = os.getenv("MAX_CHAT_ID")
-TELEGRAM_API_URL = "https://api.telegram.org/bot{token}"
-TELEGRAM_SEND_MESSAGE_URL = f"{TELEGRAM_API_URL}/sendMessage"
-TELEGRAM_SEND_PHOTO_URL = f"{TELEGRAM_API_URL}/sendPhoto"
-TELEGRAM_SEND_MEDIA_GROUP_URL = f"{TELEGRAM_API_URL}/sendMediaGroup"
-TELEGRAM_SEND_DOCUMENT_URL = f"{TELEGRAM_API_URL}/sendDocument"
-TELEGRAM_SEND_VIDEO_URL = f"{TELEGRAM_API_URL}/sendVideo"
+from constants import (
+    TOKEN,
+    CHAT_ID,
+    TELEGRAM_SEND_MESSAGE_URL,
+    TELEGRAM_SEND_PHOTO_URL,
+    TELEGRAM_SEND_MEDIA_GROUP_URL,
+    TELEGRAM_SEND_DOCUMENT_URL,
+    TELEGRAM_SEND_VIDEO_URL,
+)
 
 
 def send(text):
@@ -28,7 +26,9 @@ def send_photo(photo_url, caption=None):
     requests.post(TELEGRAM_SEND_PHOTO_URL.format(token=TOKEN), json=data)
 
 
-def send_document(document: str | bytes, caption: str | None = None, filename: str = "file") -> None:
+def send_document(
+    document: str | bytes, caption: str | None = None, filename: str = "file"
+) -> None:
     """Отправляет файл в Telegram: по URL или как bytes (multipart)."""
     if isinstance(document, bytes):
         data: dict = {"chat_id": CHAT_ID}
@@ -46,7 +46,9 @@ def send_document(document: str | bytes, caption: str | None = None, filename: s
         requests.post(TELEGRAM_SEND_DOCUMENT_URL.format(token=TOKEN), json=data)
 
 
-def send_video(video: str | bytes, caption: str | None = None, filename: str = "video.mp4") -> None:
+def send_video(
+    video: str | bytes, caption: str | None = None, filename: str = "video.mp4"
+) -> None:
     """Отправляет видео в Telegram: по URL или как bytes (multipart)."""
     if isinstance(video, bytes):
         data: dict = {"chat_id": CHAT_ID}
