@@ -1,5 +1,5 @@
 import asyncio
-
+from constants import TELEGRAM_PREFIX
 from playwright.async_api import Page
 from loguru import logger
 import time
@@ -275,9 +275,9 @@ class MaxClient:
         editor = await self._get_editor()
         await editor.click()
         try:
-            await editor.fill(f"TELEGRAM: {text}")
+            await editor.fill(f"{TELEGRAM_PREFIX} {text}")
         except Exception:
-            await self.page.keyboard.insert_text(f"TELEGRAM: {text}")
+            await self.page.keyboard.insert_text(f"{TELEGRAM_PREFIX} {text}")
         await self.page.keyboard.press("Enter")
 
     async def debug_screenshot(self, name: str):
@@ -291,12 +291,112 @@ class MaxClient:
             f.write(await self.page.content())
         logger.info(f"HTML dump: {path}")
 
+    async def download_file(self, url: str) -> bytes:
+        """Загружает файл через браузерный контекст (с авторизацией Max)."""
+        response = await self.page.context.request.get(url)
+        return await response.body()
+
+    async def _attach_document_file(self, composer, file_path: str) -> None:
+        """Прикрепляет файл через меню «Файл» (не «Фото или видео»)."""
+        upload_btn = composer.locator('button[aria-label="Загрузить файл"]').first
+        await upload_btn.wait_for(state="visible", timeout=10000)
+        file_input = composer.locator('input[type="file"]').first
+        await file_input.wait_for(state="attached", timeout=10000)
+
+        async def input_has_files() -> bool:
+            return await file_input.evaluate(
+                "el => !!(el.files && el.files.length > 0)"
+            )
+
+        await upload_btn.click()
+        file_menu_item = self.page.locator(
+            '[role="dialog"] [role="menuitem"][aria-label="Файл"]'
+        ).first
+        try:
+            await file_menu_item.wait_for(state="visible", timeout=8000)
+        except Exception:
+            file_menu_item = self.page.get_by_role("menuitem", name="Файл")
+            await file_menu_item.wait_for(state="visible", timeout=5000)
+
+        try:
+            async with self.page.expect_file_chooser(timeout=15000) as fc_info:
+                await file_menu_item.click()
+            file_chooser = await fc_info.value
+            await file_chooser.set_files(file_path)
+        except Exception as ex:
+            logger.warning(
+                f"File chooser after «Файл» failed ({ex}), trying set_input_files"
+            )
+            await file_input.set_input_files(file_path)
+
+        if not await input_has_files():
+            logger.warning("input still empty; retrying set_input_files")
+            await file_input.set_input_files(file_path)
+
+        if not await input_has_files():
+            raise RuntimeError(
+                "File did not attach: <input type=file> has no files after upload attempts"
+            )
+
+    async def send_file(self, file_path: str, caption: str | None = None) -> None:
+        """Отправляет произвольный файл через пункт меню «Файл»."""
+        await self.page.wait_for_load_state("domcontentloaded")
+        composer = await self._get_composer()
+        before_bubbles = await self.page.locator(".bubble").count()
+
+        await self._attach_document_file(composer, file_path)
+        await self._wait_upload_ready()
+        await self._close_blocking_popovers()
+
+        editor = composer.locator(
+            'div.contenteditable[contenteditable][role="textbox"][data-lexical-editor="true"]'
+        ).first
+        await editor.wait_for(state="visible", timeout=10000)
+
+        try:
+            await editor.fill(f"{TELEGRAM_PREFIX} {caption or ''}")
+        except Exception:
+            try:
+                await editor.click(force=True)
+            except Exception:
+                pass
+            await self.page.keyboard.insert_text(caption or "")
+
+        sent = await self._wait_and_click_send_button(composer)
+        if sent:
+            try:
+                await self.page.wait_for_function(
+                    "(prev) => document.querySelectorAll('.bubble').length > prev",
+                    arg=before_bubbles,
+                    timeout=8000,
+                )
+                logger.info("File send confirmed")
+                return
+            except Exception as ex:
+                logger.warning(f"Send button click did not increase bubble count: {ex}")
+
+        try:
+            await editor.click(force=True)
+            await self.page.keyboard.press("Enter")
+            await self.page.wait_for_function(
+                "(prev) => document.querySelectorAll('.bubble').length > prev",
+                arg=before_bubbles,
+                timeout=8000,
+            )
+            logger.info("File send confirmed via Enter")
+            return
+        except Exception as ex:
+            logger.warning(f"Enter fallback failed: {ex}")
+
+        logger.error("File send failed: no method worked")
+
     async def send_photo(self, photo_path: str, caption: str | None = None) -> None:
         await self.page.wait_for_load_state("domcontentloaded")
         composer = await self._get_composer()
         before_bubbles = await self.page.locator(".bubble").count()
 
         await self._attach_photo_file(composer, photo_path)
+
         # await self.debug_screenshot("send_photo_1")
         # await self.debug_html("send_photo_1")
 
@@ -352,11 +452,11 @@ class MaxClient:
         ).first
         await editor.wait_for(state="visible", timeout=10000)
 
-        #  await self.debug_screenshot("send_photo_4")
+        # await self.debug_screenshot("send_photo_4")
         # await self.debug_html("send_photo_4")
 
         try:
-            await editor.fill(f"TELEGRAM: {caption or ''}")
+            await editor.fill(f"{TELEGRAM_PREFIX} {caption or ''}")
         except Exception:
             try:
                 await editor.click(force=True)
@@ -438,7 +538,7 @@ class MaxClient:
         except Exception as ex:
             logger.warning(f"Enter fallback failed: {ex}")
 
-        await self.debug_screenshot("send_photo_11")
+        # await self.debug_screenshot("send_photo_11")
         # await self.debug_html("send_photo_11")
 
         logger.error("Photo send failed: no method worked")

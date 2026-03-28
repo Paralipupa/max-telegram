@@ -1,7 +1,5 @@
-
-import requests, os
-TOKEN=os.getenv("TELEGRAM_BOT_TOKEN")
-CHAT_ID=os.getenv("TELEGRAM_CHAT_ID")
+import requests
+from constants import TOKEN, CHAT_ID
 
 def send_telegram(text):
     requests.post(

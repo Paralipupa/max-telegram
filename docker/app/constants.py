@@ -1,0 +1,23 @@
+import os
+
+MAX_PREFIX = "⟨M⟩"
+TELEGRAM_PREFIX = "⟨T⟩"
+
+MAX_CHAT_ID = os.getenv("MAX_CHAT_ID")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+WEBHOOK_PATH = f"/bot{TELEGRAM_BOT_TOKEN}/"
+
+PAGE_URL = f"https://web.max.ru/{MAX_CHAT_ID}"
+TAIL_LIMIT = int(os.getenv("TAIL_LIMIT", "30"))
+HEADLESS = os.getenv("HEADLESS", "true") == "true"
+
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TELEGRAM_API_URL = "https://api.telegram.org/bot{token}"
+TELEGRAM_SEND_MESSAGE_URL = f"{TELEGRAM_API_URL}/sendMessage"
+TELEGRAM_SEND_PHOTO_URL = f"{TELEGRAM_API_URL}/sendPhoto"
+TELEGRAM_SEND_MEDIA_GROUP_URL = f"{TELEGRAM_API_URL}/sendMediaGroup"
+TELEGRAM_SEND_DOCUMENT_URL = f"{TELEGRAM_API_URL}/sendDocument"
+TELEGRAM_SEND_VIDEO_URL = f"{TELEGRAM_API_URL}/sendVideo"
+
+
