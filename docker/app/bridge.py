@@ -156,7 +156,7 @@ async def _process_messages(
             continue
         fp = store.fingerprint(msg)
         if store.has(fp):
-            break
+            continue
 
         await _send_to_telegram(msg, message_text, maxc)
 

@@ -4,6 +4,7 @@ import os
 import sqlite3
 import time
 from typing import Any, Iterable
+from urllib.parse import urlparse, urlunparse
 
 class DedupStore:
     """
@@ -49,22 +50,33 @@ class DedupStore:
         return hashlib.sha256(payload).hexdigest()
 
     @staticmethod
+    def _strip_query(url: str) -> str:
+        """Убирает query-параметры из URL (временные токены не должны влиять на хеш)."""
+        try:
+            p = urlparse(url)
+            return urlunparse(p._replace(query="", fragment=""))
+        except Exception:
+            return url
+
+    @staticmethod
     def _normalize_message(message: dict[str, Any]) -> dict[str, Any]:
+        # Сообщение с фото в Максе рендерится постепенно: сначала только текст (type=text),
+        # затем текст+фото (type=images/mixed). Если есть caption — используем его как
+        # единственный ключ, иначе при смене типа получим разные хеши и дублирование.
+        caption = (message.get("text") or message.get("caption") or "").strip()
+        if caption:
+            return {"caption": caption}
+
+        strip = DedupStore._strip_query
         t = message.get("type")
-        if t == "text":
-            return {"type": "text", "text": (message.get("text") or "").strip()}
         if t in ("image", "images"):
             urls: Iterable[str]
             if "urls" in message and isinstance(message["urls"], list):
-                urls = [str(u) for u in message["urls"] if u]
+                urls = [strip(str(u)) for u in message["urls"] if u]
             else:
                 u = message.get("url")
-                urls = [str(u)] if u else []
-            return {
-                "type": "images",
-                "urls": sorted(urls),
-                "caption": (message.get("caption") or "").strip(),
-            }
+                urls = [strip(str(u))] if u else []
+            return {"type": "images", "urls": sorted(urls)}
         if t == "attachments":
             items = message.get("items") or []
             norm_items: list[dict[str, str]] = []
@@ -74,18 +86,13 @@ class DedupStore:
             ):
                 norm_items.append(
                     {
-                        "url": str(it.get("url") or "").strip(),
+                        "url": strip(str(it.get("url") or "").strip()),
                         "kind": str(it.get("kind") or "document"),
-                        "name": (str(it.get("name") or "")).strip(),
                     }
                 )
-            return {
-                "type": "attachments",
-                "items": norm_items,
-                "caption": (message.get("caption") or "").strip(),
-            }
+            return {"type": "attachments", "items": norm_items}
         if t == "mixed":
-            imgs = [str(u) for u in (message.get("image_urls") or []) if u]
+            imgs = [strip(str(u)) for u in (message.get("image_urls") or []) if u]
             att = message.get("attachments") or []
             norm_att: list[dict[str, str]] = []
             for it in sorted(
@@ -94,17 +101,11 @@ class DedupStore:
             ):
                 norm_att.append(
                     {
-                        "url": str(it.get("url") or "").strip(),
+                        "url": strip(str(it.get("url") or "").strip()),
                         "kind": str(it.get("kind") or "document"),
-                        "name": (str(it.get("name") or "")).strip(),
                     }
                 )
-            return {
-                "type": "mixed",
-                "image_urls": sorted(imgs),
-                "attachments": norm_att,
-                "caption": (message.get("caption") or "").strip(),
-            }
+            return {"type": "mixed", "image_urls": sorted(imgs), "attachments": norm_att}
         return {"type": str(t or "unknown"), "raw": message}
 
     def has(self, fingerprint: str) -> bool:
