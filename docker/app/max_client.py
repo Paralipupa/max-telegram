@@ -291,6 +291,11 @@ class MaxClient:
             f.write(await self.page.content())
         logger.info(f"HTML dump: {path}")
 
+    async def download_file(self, url: str) -> bytes:
+        """Загружает файл через браузерный контекст (с авторизацией Max)."""
+        response = await self.page.context.request.get(url)
+        return await response.body()
+
     async def _attach_document_file(self, composer, file_path: str) -> None:
         """Прикрепляет файл через меню «Файл» (не «Фото или видео»)."""
         upload_btn = composer.locator('button[aria-label="Загрузить файл"]').first
@@ -392,8 +397,8 @@ class MaxClient:
 
         await self._attach_photo_file(composer, photo_path)
 
-        await self.debug_screenshot("send_photo_1")
-        await self.debug_html("send_photo_1")
+        # await self.debug_screenshot("send_photo_1")
+        # await self.debug_html("send_photo_1")
 
         # Ждём появления превью с ПРАВИЛЬНЫМИ селекторами для MAX
         preview_selectors = [
@@ -431,15 +436,15 @@ class MaxClient:
                 logger.warning(f"File attached (attachment button not found): {ex}")
                 pass
 
-        await self.debug_screenshot("send_photo_2")
-        await self.debug_html("send_photo_2")
+        # await self.debug_screenshot("send_photo_2")
+        # await self.debug_html("send_photo_2")
 
         # Ждём завершения загрузки
         await self._wait_upload_ready()
         await self._close_blocking_popovers()
 
-        await self.debug_screenshot("send_photo_3")
-        await self.debug_html("send_photo_3")
+        # await self.debug_screenshot("send_photo_3")
+        # await self.debug_html("send_photo_3")
 
         # Вставляем подпись, если есть
         editor = composer.locator(
@@ -447,8 +452,8 @@ class MaxClient:
         ).first
         await editor.wait_for(state="visible", timeout=10000)
 
-        await self.debug_screenshot("send_photo_4")
-        await self.debug_html("send_photo_4")
+        # await self.debug_screenshot("send_photo_4")
+        # await self.debug_html("send_photo_4")
 
         try:
             await editor.fill(f"{TELEGRAM_PREFIX} {caption or ''}")
@@ -459,14 +464,14 @@ class MaxClient:
                 pass
             await self.page.keyboard.insert_text(caption or '')
 
-        await self.debug_screenshot("send_photo_5")
-        await self.debug_html("send_photo_5")
+        # await self.debug_screenshot("send_photo_5")
+        # await self.debug_html("send_photo_5")
 
         # Пытаемся отправить кнопкой
         sent = await self._wait_and_click_send_button(composer)
 
-        await self.debug_screenshot("send_photo_6")
-        await self.debug_html("send_photo_6")
+        # await self.debug_screenshot("send_photo_6")
+        # await self.debug_html("send_photo_6")
 
         if sent:
             try:
@@ -477,8 +482,8 @@ class MaxClient:
                     timeout=8000,
                 )
 
-                await self.debug_screenshot("send_photo_7")
-                await self.debug_html("send_photo_7")
+                # await self.debug_screenshot("send_photo_7")
+                # await self.debug_html("send_photo_7")
 
                 # Проверяем, что превью исчезло
                 if preview_found:
@@ -491,8 +496,8 @@ class MaxClient:
                     except Exception as ex:
                         logger.warning(f"Preview still present after send: {ex}")
 
-                await self.debug_screenshot("send_photo_8")
-                await self.debug_html("send_photo_8")
+                # await self.debug_screenshot("send_photo_8")
+                # await self.debug_html("send_photo_8")
 
                 # Проверяем, что последнее сообщение - фото
                 last_info = await self.get_last_message_info()
@@ -508,16 +513,16 @@ class MaxClient:
                 else:
                     logger.warning("Last message does not contain image(s)")
 
-                await self.debug_screenshot("send_photo_9")
-                await self.debug_html("send_photo_9")
+                # await self.debug_screenshot("send_photo_9")
+                # await self.debug_html("send_photo_9")
 
                 return
 
             except Exception as ex:
                 logger.warning(f"Send button click did not increase bubble count: {ex}")
 
-        await self.debug_screenshot("send_photo_10")
-        await self.debug_html("send_photo_10")
+        # await self.debug_screenshot("send_photo_10")
+        # await self.debug_html("send_photo_10")
 
         # Fallback: пробуем Enter
         try:
@@ -533,7 +538,7 @@ class MaxClient:
         except Exception as ex:
             logger.warning(f"Enter fallback failed: {ex}")
 
-        await self.debug_screenshot("send_photo_11")
-        await self.debug_html("send_photo_11")
+        # await self.debug_screenshot("send_photo_11")
+        # await self.debug_html("send_photo_11")
 
         logger.error("Photo send failed: no method worked")
