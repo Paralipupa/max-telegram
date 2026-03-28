@@ -1,4 +1,5 @@
 import asyncio
+from constants import MAX_PREFIX, TELEGRAM_PREFIX
 from browser import BrowserManager
 from max_client import MaxClient
 import asyncio
@@ -42,12 +43,12 @@ async def run_bridge():
 
 def _format_images_caption(msg: dict) -> str:
     caption = msg.get("caption")
-    return f"MAX: {caption}" if caption else "MAX: [фото]"
+    return f"{MAX_PREFIX} {caption}" if caption else f"{MAX_PREFIX} [фото]"
 
 
 def _format_attachments_caption(msg: dict) -> str:
     caption = msg.get("caption")
-    return f"MAX: {caption}" if caption else "MAX: [файл]"
+    return f"{MAX_PREFIX} {caption}" if caption else f"{MAX_PREFIX} [файл]"
 
 
 def _strip_trailing_time(caption: str) -> str:
@@ -104,7 +105,7 @@ def _send_to_telegram(msg: dict, message_text: str) -> None:
                 send_document(url, None)
         return
 
-    send("MAX: " + message_text)
+    send(f"{MAX_PREFIX} {message_text}")
 
 
 def _refresh_seen_count_if_needed(
@@ -143,7 +144,7 @@ def _process_messages(
         message_text = msg.get("text") or msg.get("caption") or ""
         if re.search(r'\d{2}:\d{2}$', message_text):
             message_text = re.sub(r'\s*\d{2}:\d{2}$', '', message_text)
-        if "TELEGRAM:" in message_text:
+        if TELEGRAM_PREFIX in message_text:
             continue
         fp = store.fingerprint(msg)
         if store.has(fp):

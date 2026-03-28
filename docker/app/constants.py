@@ -1,0 +1,2 @@
+MAX_PREFIX = "⟨M⟩"
+TELEGRAM_PREFIX = "⟨T⟩"
