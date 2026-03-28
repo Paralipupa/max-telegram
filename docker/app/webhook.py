@@ -58,13 +58,21 @@ async def process(data):
     await maxc.open_chat(chat_id)
 
     message = data.get("message") or {}
+    from_name = (
+        message.get("from", {}).get("first_name")
+        if not message.get("from", {}).get("is_bot")
+        else None
+    )
     text = message.get("text") or message.get("caption") or ""
     text = strip_trailing_time(text)
+    # if from_name:
+    #     text = f"{from_name}: {text}"
     file_id, media_type = _extract_file_info(message)
     if not text and not file_id:
         raise ValueError("bad request")
 
-    await send_to_max(b, text=text, file_id=file_id, media_type=media_type)
+    if text or file_id:
+        await send_to_max(b, text=text, file_id=file_id, media_type=media_type)
 
 
 def _extract_file_info(message: dict) -> tuple[str | None, str | None]:
