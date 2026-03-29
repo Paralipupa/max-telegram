@@ -49,7 +49,7 @@ async def run_bridge():
             seen_count = await _process_messages(store, msgs, seen_count, maxc)
         except Exception as e:
             logger.error(f"Ошибка: {e}")
-        await asyncio.sleep(1)
+        await asyncio.sleep(3)
 
 
 def _format_images_caption(msg: dict) -> str:
