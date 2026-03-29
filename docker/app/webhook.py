@@ -38,15 +38,14 @@ def _register_webhook(app: FastAPI, pair: ChatPair) -> None:
     path = pair.webhook_path
     logger.info(f"[{pair.name}] Регистрируем webhook: {path}")
 
-    # Closure захватывает pair по значению через аргумент со значением по умолчанию
-    async def hook(request: Request, _pair: ChatPair = pair) -> str:
+    async def hook(request: Request) -> str:
         try:
             payload = await request.json()
-            t = asyncio.create_task(process(payload, _pair))
+            t = asyncio.create_task(process(payload, pair))
             t.add_done_callback(log_background_task)
             return "ok"
         except Exception as e:
-            logger.error(f"[{_pair.name}] Ошибка обработки webhook: {e}")
+            logger.error(f"[{pair.name}] Ошибка обработки webhook: {e}")
             return PlainTextResponse("error", status_code=500)
 
     async def healthcheck(request: Request) -> str:

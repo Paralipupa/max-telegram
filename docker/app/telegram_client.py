@@ -5,14 +5,14 @@ from loguru import logger
 
 def send(pair: ChatPair, text: str) -> None:
     """Отправляет текстовое сообщение в Telegram."""
-    logger.info(f"[{pair.name}] Отправляем текст в чат {pair.telegram_chat_id}: {text}")
+    logger.info(f"[{pair.name}] Отправляем текст: {text}")
     requests.post(f"{pair.tg_api}/sendMessage", json={"chat_id": pair.telegram_chat_id, "text": text})
-    logger.info(f"[{pair.name}] Отправлено")
+    logger.info(f"[{pair.name}] Текст отправлен")
 
 
 def send_photo(pair: ChatPair, photo_url: str, caption: str | None = None) -> None:
     """Отправляет фото в Telegram по URL."""
-    logger.info(f"[{pair.name}] Отправляем фото: {photo_url} - {caption}")
+    logger.info(f"[{pair.name}] Отправляем фото: {caption}")
     data: dict = {"chat_id": pair.telegram_chat_id, "photo": photo_url}
     if caption:
         data["caption"] = caption
