@@ -16,7 +16,15 @@ class BrowserManager:
             return cls._instance
 
         pw = await async_playwright().start()
-        browser = await pw.chromium.launch(headless=HEADLESS)
+        browser = await pw.chromium.launch(
+            headless=HEADLESS,
+            args=[
+                "--disable-dev-shm-usage",  # Не использовать /dev/shm (ограничен в Docker до 64MB)
+                "--no-sandbox",
+                "--disable-gpu",
+                "--disable-extensions",
+            ],
+        )
         context = await browser.new_context(storage_state="/data/auth.json")
         page = await context.new_page()
         await page.goto(PAGE_URL)

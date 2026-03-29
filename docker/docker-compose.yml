@@ -5,6 +5,7 @@ services:
     container_name: max_telegram_bridge
     restart: always
     command: run_bridge
+    shm_size: 256mb  # Chromium требует достаточно shared memory
     volumes:
       - ./data:/data
     env_file:
