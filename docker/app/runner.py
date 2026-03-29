@@ -36,7 +36,7 @@ async def main():
     server = uvicorn.Server(config)
 
     await asyncio.gather(
-        *[run_bridge(pair) for pair in pairs],
+        *[run_bridge(pair, len(pairs)) for pair in pairs],
         server.serve(),
     )
 

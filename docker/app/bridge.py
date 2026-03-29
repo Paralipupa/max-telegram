@@ -9,7 +9,7 @@ from dedup_store import DedupStore
 from loguru import logger
 
 
-async def run_bridge(pair: ChatPair) -> None:
+async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
     logger.info(f"[{pair.name}] Запускаем bridge: Max {pair.max_chat_id} → TG {pair.telegram_chat_id}")
     b = await BrowserManager.get(pair.name, pair.max_url)
     maxc = MaxClient(b["page"])
@@ -20,11 +20,21 @@ async def run_bridge(pair: ChatPair) -> None:
     last_count_refresh = time.monotonic()
 
     logger.info(f"[{pair.name}] Дедупликация прогрета: {seen_count}. Слушаем сообщения...")
+    last_page_reload = time.monotonic()
+    PAGE_RELOAD_INTERVAL = 30 * 60  # Перезагружать страницу каждые 30 минут (освобождает память SPA)
+    poll_interval = total_pairs * 2  # Чем больше пар, тем реже опрашиваем — снижаем нагрузку на CPU
+
     while True:
         try:
             seen_count, last_count_refresh = _refresh_seen_count_if_needed(
                 store, seen_count, last_count_refresh
             )
+            now = time.monotonic()
+            if now - last_page_reload >= PAGE_RELOAD_INTERVAL:
+                async with b["lock"]:
+                    logger.info(f"[{pair.name}] Перезагружаем страницу браузера для освобождения памяти")
+                    await BrowserManager.reload_page(pair.name)
+                last_page_reload = now
             async with b["lock"]:
                 msgs = await maxc.get_recent_messages_info(
                     limit=_dynamic_tail_limit(seen_count)
@@ -32,7 +42,7 @@ async def run_bridge(pair: ChatPair) -> None:
             seen_count = await _process_messages(store, msgs, seen_count, maxc, pair)
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка: {e}")
-        await asyncio.sleep(1)
+        await asyncio.sleep(poll_interval)
 
 
 def _format_images_caption(msg: dict) -> str:
