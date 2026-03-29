@@ -23,6 +23,8 @@ class BrowserManager:
                 "--no-sandbox",
                 "--disable-gpu",
                 "--disable-extensions",
+                "--single-process",          # Один процесс вместо нескольких — экономия ~200MB RAM
+                "--js-flags=--max-old-space-size=256",  # Ограничить V8 heap
             ],
         )
         context = await browser.new_context(storage_state="/data/auth.json")

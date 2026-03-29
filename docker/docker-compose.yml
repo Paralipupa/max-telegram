@@ -6,6 +6,7 @@ services:
     restart: always
     command: run_bridge
     shm_size: 256mb  # Chromium требует достаточно shared memory
+    mem_limit: 1.4g  # Убивать контейнер до того как OOM-киллер сносит хостовые процессы
     volumes:
       - ./data:/data
     env_file:
