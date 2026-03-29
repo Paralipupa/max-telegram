@@ -22,28 +22,28 @@ async def hook(request: Request) -> str:
         return PlainTextResponse("error", status_code=500)
 
 
-@app.api_route(
-    "/{path:path}",
-    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
-)
-async def catch_all(request: Request, path: str):
-    logger.info(
-        f"Запрошенный путь /{path} не существует. "
-        f"host: {request.headers.get('host')} "
-        f"user-agent: {request.headers.get('user-agent')} "
-        f"x-forwarded-for: {request.headers.get('x-forwarded-for')} "
-        f"x-forwarded-host: {request.headers.get('x-forwarded-host')} "
-        f"x-forwarded-proto: {request.headers.get('x-forwarded-proto')} "
-        f"x-forwarded-port: {request.headers.get('x-forwarded-port')} "
-        f"x-forwarded-server: {request.headers.get('x-forwarded-server')} "
-        f"x-forwarded-client-ip: {request.headers.get('x-forwarded-client-ip')} "
-        f"x-forwarded-client-port: {request.headers.get('x-forwarded-client-port')} "
-    )
-    return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND,
-        content={
-            "status": "error",
-            "details": "Запрошенный путь не существует",
-            "path": path,
-        },
-    )
+# @app.api_route(
+#     "/{path:path}",
+#     methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+# )
+# async def catch_all(request: Request, path: str):
+#     logger.info(
+#         f"Запрошенный путь /{path} не существует. "
+#         f"host: {request.headers.get('host')} "
+#         f"user-agent: {request.headers.get('user-agent')} "
+#         f"x-forwarded-for: {request.headers.get('x-forwarded-for')} "
+#         f"x-forwarded-host: {request.headers.get('x-forwarded-host')} "
+#         f"x-forwarded-proto: {request.headers.get('x-forwarded-proto')} "
+#         f"x-forwarded-port: {request.headers.get('x-forwarded-port')} "
+#         f"x-forwarded-server: {request.headers.get('x-forwarded-server')} "
+#         f"x-forwarded-client-ip: {request.headers.get('x-forwarded-client-ip')} "
+#         f"x-forwarded-client-port: {request.headers.get('x-forwarded-client-port')} "
+#     )
+#     return JSONResponse(
+#         status_code=status.HTTP_404_NOT_FOUND,
+#         content={
+#             "status": "error",
+#             "details": "Запрошенный путь не существует",
+#             "path": path,
+#         },
+#     )
