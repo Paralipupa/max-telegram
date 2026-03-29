@@ -1,5 +1,4 @@
 import asyncio
-import os
 from playwright.async_api import async_playwright
 from constants import PAGE_URL, HEADLESS
 
@@ -38,3 +37,12 @@ class BrowserManager:
             "page": page,
         }
         return cls._instance
+
+    @classmethod
+    async def reload_page(cls):
+        """Перезагружает страницу чата для освобождения памяти браузера (SPA накапливает DOM)."""
+        if not cls._instance:
+            return
+        page = cls._instance["page"]
+        await page.goto(PAGE_URL)
+        await page.wait_for_selector(".bubble", timeout=15000)

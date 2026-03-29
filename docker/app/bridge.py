@@ -28,11 +28,20 @@ async def run_bridge():
     last_count_refresh = time.monotonic()
 
     logger.info(f"Дедупликация прогрета: {seen_count}. Слушаем сообщения...")
+    last_page_reload = time.monotonic()
+    PAGE_RELOAD_INTERVAL = 30 * 60  # Перезагружать страницу каждые 30 минут (освобождает память SPA)
+
     while True:
         try:
             seen_count, last_count_refresh = _refresh_seen_count_if_needed(
                 store, seen_count, last_count_refresh
             )
+            now = time.monotonic()
+            if now - last_page_reload >= PAGE_RELOAD_INTERVAL:
+                async with BrowserManager.lock:
+                    logger.info("Перезагружаем страницу браузера для освобождения памяти")
+                    await BrowserManager.reload_page()
+                last_page_reload = now
             async with BrowserManager.lock:
                 msgs = await maxc.get_recent_messages_info(
                     limit=_dynamic_tail_limit(seen_count)
