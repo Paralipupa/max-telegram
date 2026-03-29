@@ -5,14 +5,14 @@ from loguru import logger
 
 def send(pair: ChatPair, text: str) -> None:
     """Отправляет текстовое сообщение в Telegram."""
-    logger.info(f"[{pair.name}] Отправляем текст: {text}")
+    logger.info(f"[{pair.name}] Отправляем текст: {text[:20]}...")
     requests.post(f"{pair.tg_api}/sendMessage", json={"chat_id": pair.telegram_chat_id, "text": text})
     logger.info(f"[{pair.name}] Текст отправлен")
 
 
 def send_photo(pair: ChatPair, photo_url: str, caption: str | None = None) -> None:
     """Отправляет фото в Telegram по URL."""
-    logger.info(f"[{pair.name}] Отправляем фото: {caption}")
+    logger.info(f"[{pair.name}] Отправляем фото: {caption[:20]}...")
     data: dict = {"chat_id": pair.telegram_chat_id, "photo": photo_url}
     if caption:
         data["caption"] = caption
@@ -27,7 +27,7 @@ def send_document(
     filename: str = "file",
 ) -> None:
     """Отправляет файл в Telegram: по URL или как bytes (multipart)."""
-    logger.info(f"[{pair.name}] Отправляем документ: {caption} filename={filename}")
+    logger.info(f"[{pair.name}] Отправляем документ: {caption[:20]}... filename={filename}")
     if isinstance(document, bytes):
         data: dict = {"chat_id": pair.telegram_chat_id}
         if caption:
@@ -48,7 +48,7 @@ def send_video(
     filename: str = "video.mp4",
 ) -> None:
     """Отправляет видео в Telegram: по URL или как bytes (multipart)."""
-    logger.info(f"[{pair.name}] Отправляем видео: {caption} filename={filename}")
+    logger.info(f"[{pair.name}] Отправляем видео: {caption[:20]}... filename={filename}")
     if isinstance(video, bytes):
         data: dict = {"chat_id": pair.telegram_chat_id}
         if caption:
@@ -64,7 +64,7 @@ def send_video(
 
 def send_media_group(pair: ChatPair, photo_urls: list[str], caption: str | None = None) -> None:
     """Отправляет несколько фото одним альбомом (sendMediaGroup)."""
-    logger.info(f"[{pair.name}] Отправляем альбом: {len(photo_urls)} фото - {caption}")
+    logger.info(f"[{pair.name}] Отправляем альбом: {len(photo_urls)} фото - {caption[:20]}...")
     urls = [u for u in photo_urls if isinstance(u, str) and u.strip()]
     if not urls:
         return

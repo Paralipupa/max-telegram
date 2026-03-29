@@ -4,13 +4,21 @@ from constants import MAX_PREFIX, TELEGRAM_PREFIX, TAIL_LIMIT, ChatPair
 from helpers import strip_trailing_time
 from browser import BrowserManager
 from max_client import MaxClient
-from telegram_client import send, send_document, send_media_group, send_photo, send_video
+from telegram_client import (
+    send,
+    send_document,
+    send_media_group,
+    send_photo,
+    send_video,
+)
 from dedup_store import DedupStore
 from loguru import logger
 
 
 async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
-    logger.info(f"[{pair.name}] Запускаем bridge: Max {pair.max_chat_id} → TG {pair.telegram_chat_id}")
+    logger.info(
+        f"[{pair.name}] Запускаем bridge: Max {pair.max_chat_id} → TG {pair.telegram_chat_id}"
+    )
     b = await BrowserManager.get(pair.name, pair.max_url)
     maxc = MaxClient(b["page"])
 
@@ -19,10 +27,16 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
     seen_count = store.count()
     last_count_refresh = time.monotonic()
 
-    logger.info(f"[{pair.name}] Дедупликация прогрета: {seen_count}. Слушаем сообщения...")
+    logger.info(
+        f"[{pair.name}] Дедупликация прогрета: {seen_count}. Слушаем сообщения..."
+    )
     last_page_reload = time.monotonic()
-    PAGE_RELOAD_INTERVAL = 30 * 60  # Перезагружать страницу каждые 30 минут (освобождает память SPA)
-    poll_interval = total_pairs * 2  # Чем больше пар, тем реже опрашиваем — снижаем нагрузку на CPU
+    PAGE_RELOAD_INTERVAL = (
+        30 * 60
+    )  # Перезагружать страницу каждые 30 минут (освобождает память SPA)
+    poll_interval = (
+        total_pairs * 2
+    )  # Чем больше пар, тем реже опрашиваем — снижаем нагрузку на CPU
 
     while True:
         try:
@@ -32,7 +46,9 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
             now = time.monotonic()
             if now - last_page_reload >= PAGE_RELOAD_INTERVAL:
                 async with b["lock"]:
-                    logger.info(f"[{pair.name}] Перезагружаем страницу браузера для освобождения памяти")
+                    logger.info(
+                        f"[{pair.name}] Перезагружаем страницу браузера для освобождения памяти"
+                    )
                     await BrowserManager.reload_page(pair.name)
                 last_page_reload = now
             async with b["lock"]:
@@ -46,7 +62,7 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
 
 
 def _format_images_caption(msg: dict) -> str:
-    caption = msg.get("caption")
+    caption = msg.get("caption") or msg.get("text")
     return f"{MAX_PREFIX} {caption}" if caption else f"{MAX_PREFIX} [фото]"
 
 
@@ -64,7 +80,9 @@ async def _download_or_url(maxc: MaxClient, url: str) -> str | bytes:
         return url
 
 
-async def _send_attachments(msg: dict, caption: str, maxc: MaxClient, pair: ChatPair) -> None:
+async def _send_attachments(
+    msg: dict, caption: str, maxc: MaxClient, pair: ChatPair
+) -> None:
     items = msg.get("items") or []
     cap = strip_trailing_time(caption)
     for i, item in enumerate(items):
@@ -80,7 +98,9 @@ async def _send_attachments(msg: dict, caption: str, maxc: MaxClient, pair: Chat
             send_document(pair, data, c, filename=name or "file")
 
 
-async def _send_to_telegram(msg: dict, message_text: str, maxc: MaxClient, pair: ChatPair) -> None:
+async def _send_to_telegram(
+    msg: dict, message_text: str, maxc: MaxClient, pair: ChatPair
+) -> None:
     if msg["type"] == "images":
         caption = strip_trailing_time(_format_images_caption(msg))
         urls = msg.get("urls") or []
@@ -113,8 +133,12 @@ async def _send_to_telegram(msg: dict, message_text: str, maxc: MaxClient, pair:
             else:
                 send_document(pair, data, None, filename=name or "file")
         return
-
-    send(pair, f"{MAX_PREFIX} {message_text}")
+    if message_text:
+        send(pair, f"{MAX_PREFIX} {message_text}")
+    else:
+        logger.warning(
+            f"[{pair.name}] Нет текста в сообщении: {msg} (type={msg['type']})"
+        )
 
 
 def _refresh_seen_count_if_needed(
@@ -137,7 +161,8 @@ async def _warmup_dedup_if_needed(store: DedupStore, maxc: MaxClient) -> None:
     if store.count() != 0:
         return
     try:
-        warm = await maxc.get_recent_messages_info(limit=TAIL_LIMIT)
+        count = TAIL_LIMIT + 10
+        warm = await maxc.get_recent_messages_info(limit=count)
         for msg in warm:
             store.add(store.fingerprint(msg))
     except Exception as e:
@@ -160,8 +185,11 @@ async def _process_messages(
         if store.has(fp):
             continue
 
-        await _send_to_telegram(msg, message_text, maxc, pair)
-
-        store.add(fp)
-        seen_count += 1
+        try:
+            await _send_to_telegram(msg, message_text, maxc, pair)
+        except Exception as e:
+            logger.error(f"[{pair.name}] Ошибка при отправке сообщения: {e}")
+        finally:
+            store.add(fp)
+            seen_count += 1
     return seen_count

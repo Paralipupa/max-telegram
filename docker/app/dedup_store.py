@@ -6,6 +6,7 @@ import time
 from typing import Any, Iterable
 from urllib.parse import urlparse, urlunparse
 from loguru import logger
+from helpers import strip_trailing_time
 
 
 class DedupStore:
@@ -72,6 +73,7 @@ class DedupStore:
         # затем текст+фото (type=images/mixed). Если есть caption — используем его как
         # единственный ключ, иначе при смене типа получим разные хеши и дублирование.
         caption = (message.get("text") or message.get("caption") or "").strip()
+        caption = strip_trailing_time(caption)
         if caption:
             return {"caption": caption}
 
