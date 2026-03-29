@@ -271,7 +271,7 @@ class MaxClient:
             await self.page.wait_for_timeout(250)
 
     async def send_message(self, text):
-        logger.info(f"Sending message: {text}")
+        logger.info(f"Sending message: {text[:20]}...")
         editor = await self._get_editor()
         await editor.click()
         try:
