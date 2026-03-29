@@ -14,21 +14,21 @@ def create_app(pairs: list[ChatPair]) -> FastAPI:
     for pair in pairs:
         _register_webhook(app, pair)
 
-    @app.api_route(
-        "/{path:path}",
-        methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
-    )
-    async def catch_all(request: Request, path: str):
-        logger.info(
-            f"Запрошенный путь /{path} не существует. "
-            f"host: {request.headers.get('host')} "
-            f"user-agent: {request.headers.get('user-agent')} "
-            f"x-forwarded-for: {request.headers.get('x-forwarded-for')}"
-        )
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"status": "error", "details": "Запрошенный путь не существует", "path": path},
-        )
+    # @app.api_route(
+    #     "/{path:path}",
+    #     methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+    # )
+    # async def catch_all(request: Request, path: str):
+    #     logger.info(
+    #         f"Запрошенный путь /{path} не существует. "
+    #         f"host: {request.headers.get('host')} "
+    #         f"user-agent: {request.headers.get('user-agent')} "
+    #         f"x-forwarded-for: {request.headers.get('x-forwarded-for')}"
+    #     )
+    #     return JSONResponse(
+    #         status_code=status.HTTP_404_NOT_FOUND,
+    #         content={"status": "error", "details": "Запрошенный путь не существует", "path": path},
+    #     )
 
     return app
 

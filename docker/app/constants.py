@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass
 
 DEDUP_PATH = "/data/dedup.sqlite3"
+DEDUP_RESET = os.getenv("DEDUP_RESET", "false") == "true"
 MEDIA_GROUP_TIMEOUT = 2.0  # секунды ожидания хвостовых фото
 TAIL_LIMIT = int(os.getenv("TAIL_LIMIT", "30"))
 HEADLESS = os.getenv("HEADLESS", "true") == "true"

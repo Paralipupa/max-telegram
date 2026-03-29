@@ -5,7 +5,7 @@ from bridge import run_bridge
 from webhook import create_app
 from browser import BrowserManager
 from loguru import logger
-from constants import load_pairs
+from constants import load_pairs, DEDUP_RESET
 
 
 async def main():
@@ -23,7 +23,7 @@ async def main():
     # Сбрасываем дедупликацию и заранее открываем страницы для каждой пары.
     # Последовательная инициализация гарантирует создание браузера до старта фоновых задач.
     for pair in pairs:
-        if os.path.exists(pair.dedup_path):
+        if os.path.exists(pair.dedup_path) and DEDUP_RESET:
             logger.info(f"[{pair.name}] Сбрасываем дедупликацию: {pair.dedup_path}")
             try:
                 os.remove(pair.dedup_path)
