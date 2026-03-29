@@ -6,10 +6,10 @@ from bridge import run_bridge
 from webhook import app
 from browser import BrowserManager
 from loguru import logger
-from constants import DEDUP_PATH
+from constants import DEDUP_PATH, DEDUP_RESET
 
 async def main():
-    if os.path.exists(DEDUP_PATH):
+    if os.path.exists(DEDUP_PATH) and DEDUP_RESET:
         logger.info(f"Сбрасываем дедупликацию: {DEDUP_PATH}")
         try:
             os.remove(DEDUP_PATH)
