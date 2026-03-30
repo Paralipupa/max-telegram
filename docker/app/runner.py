@@ -14,6 +14,7 @@ async def periodic_auth_save():
     """Периодически сохраняет актуальные куки сессии в auth.json."""
     while True:
         await asyncio.sleep(AUTH_SAVE_INTERVAL)
+        logger.info(f"Сохраняем auth.json")
         try:
             await BrowserManager.save_auth_state()
         except Exception as e:

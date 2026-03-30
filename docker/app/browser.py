@@ -1,7 +1,7 @@
 import asyncio
 from playwright.async_api import async_playwright
 from constants import HEADLESS
-
+from loguru import logger
 
 class BrowserManager:
     """
