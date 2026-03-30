@@ -8,8 +8,9 @@ from max_message_info import bubble_to_message_info
 
 
 class MaxClient:
-    def __init__(self, page: Page) -> None:
+    def __init__(self, page: Page, first_name: str = "") -> None:
         self.page: Page = page
+        self.first_name = first_name
 
     async def _bubble_to_message_info(self, bubble):
         return await bubble_to_message_info(bubble)
@@ -20,14 +21,16 @@ class MaxClient:
             try:
                 await self.page.goto(url)
                 current_url = self.page.url
-                if "/login" in current_url or "/auth" in current_url or "web.max.ru" not in current_url:
+                if (
+                    "/login" in current_url
+                    or "/auth" in current_url
+                    or "web.max.ru" not in current_url
+                ):
                     raise RuntimeError(
                         f"Сессия Max истекла (редирект на {current_url}). "
                         "Обновите auth.json: запустите local-auth/get_auth.py"
                     )
-                await self.page.wait_for_selector(
-                    "[contenteditable]", timeout=15000
-                )
+                await self.page.wait_for_selector("[contenteditable]", timeout=15000)
                 return
             except RuntimeError:
                 raise
@@ -278,16 +281,25 @@ class MaxClient:
                 pass
             await self.page.wait_for_timeout(250)
 
-    async def _fill_editor_caption(self, editor, caption: str | None, caption_html: str | None) -> None:
+    async def _fill_editor_caption(
+        self, editor, caption: str | None, caption_html: str | None
+    ) -> None:
         """Заполняет редактор подписью — HTML (со ссылками) или plain text."""
         import html as _html
+
         prefix = f"{TELEGRAM_PREFIX} "
+        if self.first_name:
+            prefix = f"{self.first_name} {prefix} \n"
         if caption_html:
             try:
-                await self._paste_html(editor, _html.escape(prefix) + caption_html)
+                await self._paste_html(
+                    editor, _html.escape(prefix).replace("\n", "<br>") + caption_html
+                )
                 return
             except Exception as e:
-                logger.warning(f"HTML caption paste failed ({e}), falling back to plain text")
+                logger.warning(
+                    f"HTML caption paste failed ({e}), falling back to plain text"
+                )
         try:
             await editor.fill(f"{prefix}{caption or ''}")
         except Exception:
@@ -319,10 +331,13 @@ class MaxClient:
         editor = await self._get_editor()
         await editor.click()
         prefix = f"{TELEGRAM_PREFIX} "
+        if self.first_name:
+            prefix = f"{self.first_name} {prefix} \n"
         if html_text:
             try:
                 import html as _html
-                await self._paste_html(editor, _html.escape(prefix) + html_text)
+
+                await self._paste_html(editor, _html.escape(prefix).replace("\n", "<br>") + html_text)
             except Exception as e:
                 logger.warning(f"HTML paste failed ({e}), falling back to plain text")
                 try:
@@ -394,7 +409,12 @@ class MaxClient:
                 "File did not attach: <input type=file> has no files after upload attempts"
             )
 
-    async def send_file(self, file_path: str, caption: str | None = None, caption_html: str | None = None) -> None:
+    async def send_file(
+        self,
+        file_path: str,
+        caption: str | None = None,
+        caption_html: str | None = None,
+    ) -> None:
         """Отправляет произвольный файл через пункт меню «Файл»."""
         await self.page.wait_for_load_state("domcontentloaded")
         composer = await self._get_composer()
@@ -439,7 +459,12 @@ class MaxClient:
 
         logger.error("File send failed: no method worked")
 
-    async def send_photo(self, photo_path: str, caption: str | None = None, caption_html: str | None = None) -> None:
+    async def send_photo(
+        self,
+        photo_path: str,
+        caption: str | None = None,
+        caption_html: str | None = None,
+    ) -> None:
         await self.page.wait_for_load_state("domcontentloaded")
         composer = await self._get_composer()
         before_bubbles = await self.page.locator(".bubble").count()
@@ -532,7 +557,7 @@ class MaxClient:
                     try:
                         await self.page.wait_for_function(
                             "() => document.querySelector('.attaches, .attach') === null",
-                            timeout=5000,
+                            timeout=1000,
                         )
                         logger.info("Preview disappeared after send")
                     except Exception as ex:
@@ -545,10 +570,7 @@ class MaxClient:
                 last_info = await self.get_last_message_info()
                 has_images = bool(
                     last_info
-                    and (
-                        last_info.get("type") == "images"
-                        or last_info.get("urls")
-                    )
+                    and (last_info.get("type") == "images" or last_info.get("urls"))
                 )
                 if has_images:
                     logger.info("Photo send confirmed: last message contains image(s)")

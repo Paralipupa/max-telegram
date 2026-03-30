@@ -44,10 +44,12 @@ async def _delayed_send_media_group(key: tuple[str, str], pair: ChatPair) -> Non
         return
 
     caption = ""
+    first_name = ""
     caption_html = None
     for m in messages:
         raw = m.get("caption") or ""
         if raw:
+            first_name = m.get("from",{}).get("first_name") or ""
             entities = m.get("caption_entities") or []
             caption = strip_trailing_time(apply_text_links(raw, entities))
             _h = build_html_with_links(raw, entities)
@@ -76,7 +78,7 @@ async def _delayed_send_media_group(key: tuple[str, str], pair: ChatPair) -> Non
 
     b = await BrowserManager.get(pair.name, pair.max_url)
     async with b["lock"]:
-        maxc = MaxClient(b["page"])
+        maxc = MaxClient(b["page"], first_name)
         await maxc.open_chat(pair.max_chat_id)
         caption_used = False
 
@@ -127,6 +129,7 @@ async def _process_single_message(message: dict, pair: ChatPair) -> None:
     """Обрабатывает одиночное (не медиагрупповое) сообщение."""
     raw_text = message.get("text") or message.get("caption") or ""
     entities = message.get("entities") or message.get("caption_entities") or []
+    first_name = message.get("from",{}).get("first_name") or ""
     text = strip_trailing_time(apply_text_links(raw_text, entities))
     _html = build_html_with_links(raw_text, entities)
     html_text = strip_trailing_time(_html) if _html else None
@@ -136,9 +139,9 @@ async def _process_single_message(message: dict, pair: ChatPair) -> None:
 
     b = await BrowserManager.get(pair.name, pair.max_url)
     async with b["lock"]:
-        maxc = MaxClient(b["page"])
+        maxc = MaxClient(b["page"], first_name)
         await maxc.open_chat(pair.max_chat_id)
-        await send_to_max(b, text=text, html_text=html_text, file_id=file_id, media_type=media_type, pair=pair)
+        await send_to_max(b, maxc, text=text, html_text=html_text, file_id=file_id, media_type=media_type, pair=pair)
 
 
 def _pick_photo_id(photos: list[dict], max_width: int | None = None) -> str | None:
@@ -190,6 +193,10 @@ def _download_telegram_file(file_id: str, pair: ChatPair) -> str:
     file_resp.raise_for_status()
     file_path = file_resp.json()["result"]["file_path"]
     ext = os.path.splitext(file_path)[1] or ".jpg"
+    # MOV (QuickTime) не воспроизводится инлайн в браузере/Max; MP4 — да.
+    # iPhone-видео в MOV-контейнере с H.264 совместимы с MP4 без перекодирования.
+    if ext.lower() == ".mov":
+        ext = ".mp4"
 
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
     tmp.close()
@@ -207,10 +214,9 @@ def _download_telegram_file(file_id: str, pair: ChatPair) -> str:
 
 
 async def send_to_max(
-    b: dict, text: str, html_text: str | None = None, file_id: str | None = None, media_type: str | None = None, pair: ChatPair = None
+    b: dict, maxc: MaxClient, text: str, html_text: str | None = None, file_id: str | None = None, media_type: str | None = None, pair: ChatPair = None
 ) -> None:
     local_path = None
-    maxc = MaxClient(b["page"])
     try:
         if file_id:
             local_path = _download_telegram_file(file_id, pair)
