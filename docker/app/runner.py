@@ -7,6 +7,18 @@ from browser import BrowserManager
 from loguru import logger
 from constants import load_pairs, DEDUP_RESET
 
+AUTH_SAVE_INTERVAL = int(os.environ.get("AUTH_SAVE_INTERVAL", 3600))  # секунды
+
+
+async def periodic_auth_save():
+    """Периодически сохраняет актуальные куки сессии в auth.json."""
+    while True:
+        await asyncio.sleep(AUTH_SAVE_INTERVAL)
+        try:
+            await BrowserManager.save_auth_state()
+        except Exception as e:
+            logger.error(f"Не удалось сохранить auth.json: {e}")
+
 
 async def main():
     pairs = load_pairs()
@@ -38,6 +50,7 @@ async def main():
     await asyncio.gather(
         *[run_bridge(pair, len(pairs)) for pair in pairs],
         server.serve(),
+        periodic_auth_save(),
     )
 
 

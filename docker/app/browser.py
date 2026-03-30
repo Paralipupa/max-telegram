@@ -39,6 +39,14 @@ class BrowserManager:
         page = await cls._context.new_page()
         await page.goto(initial_url)
 
+        if not cls.is_session_valid(page):
+            await cls._browser.close()
+            cls._browser = None
+            cls._context = None
+            raise RuntimeError(
+                "Сессия Max истекла. Обновите auth.json: запустите local-auth/get_auth.py"
+            )
+
         cls._pages[pair_name] = {
             "page": page,
             "lock": asyncio.Lock(),
@@ -54,3 +62,17 @@ class BrowserManager:
             return
         await entry["page"].goto(entry["url"])
         await entry["page"].wait_for_selector(".bubble", timeout=15000)
+
+    @classmethod
+    async def save_auth_state(cls, path: str = "/data/auth.json") -> None:
+        """Сохраняет актуальное состояние сессии (куки, localStorage) в auth.json."""
+        if cls._context is None:
+            return
+        await cls._context.storage_state(path=path)
+        logger.info(f"auth.json обновлён ({path})")
+
+    @classmethod
+    def is_session_valid(cls, page) -> bool:
+        """Возвращает False если страница оказалась на экране входа/авторизации."""
+        url = page.url
+        return "web.max.ru" in url and "/login" not in url and "/auth" not in url

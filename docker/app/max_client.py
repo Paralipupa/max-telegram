@@ -19,10 +19,18 @@ class MaxClient:
         for attempt in range(3):
             try:
                 await self.page.goto(url)
+                current_url = self.page.url
+                if "/login" in current_url or "/auth" in current_url or "web.max.ru" not in current_url:
+                    raise RuntimeError(
+                        f"Сессия Max истекла (редирект на {current_url}). "
+                        "Обновите auth.json: запустите local-auth/get_auth.py"
+                    )
                 await self.page.wait_for_selector(
                     "[contenteditable]", timeout=15000
                 )
                 return
+            except RuntimeError:
+                raise
             except Exception as e:
                 if "ERR_ABORTED" not in str(e) or attempt == 2:
                     raise
