@@ -1,4 +1,5 @@
 import asyncio
+import os
 import time
 from constants import MAX_PREFIX, TELEGRAM_PREFIX, TAIL_LIMIT, ChatPair
 from helpers import strip_trailing_time
@@ -45,12 +46,46 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
             )
             now = time.monotonic()
             if now - last_page_reload >= PAGE_RELOAD_INTERVAL:
+                last_page_reload = now  # обновляем заранее, чтобы не зациклиться при ошибке
                 async with b["lock"]:
                     logger.info(
                         f"[{pair.name}] Перезагружаем страницу браузера для освобождения памяти"
                     )
-                    await BrowserManager.reload_page(pair.name)
-                last_page_reload = now
+                    try:
+                        await BrowserManager.reload_page(pair.name)
+                    except Exception as reload_err:
+                        logger.error(
+                            f"[{pair.name}] Страница недоступна после перезагрузки "
+                            f"(возможно, требуется авторизация): {reload_err}"
+                        )
+                        logger.warning(
+                            f"[{pair.name}] Принудительно сбрасываем дедупликацию "
+                            f"и проверяем доступность страницы..."
+                        )
+                        try:
+                            os.remove(pair.dedup_path)
+                            logger.info(
+                                f"[{pair.name}] БД дедупликации удалена: {pair.dedup_path}"
+                            )
+                        except FileNotFoundError:
+                            pass
+                        store = DedupStore(pair.dedup_path)
+                        try:
+                            warm = await maxc.get_recent_messages_info(limit=30)
+                            for msg in warm:
+                                store.add(store.fingerprint(msg))
+                            seen_count = store.count()
+                            logger.info(
+                                f"[{pair.name}] Прогрев после сброса успешен: {seen_count} записей"
+                            )
+                        except Exception as warmup_err:
+                            logger.error(
+                                f"[{pair.name}] Страница всё ещё недоступна: {warmup_err}. "
+                                f"Завершаем bridge."
+                            )
+                            raise SystemExit(
+                                f"[{pair.name}] Bridge завершён: авторизация недействительна"
+                            ) from warmup_err
             async with b["lock"]:
                 msgs = await maxc.get_recent_messages_info(
                     limit=_dynamic_tail_limit(seen_count)
@@ -161,7 +196,7 @@ async def _warmup_dedup_if_needed(store: DedupStore, maxc: MaxClient) -> None:
     if store.count() != 0:
         return
     try:
-        count = TAIL_LIMIT + 10
+        count = 30
         warm = await maxc.get_recent_messages_info(limit=count)
         for msg in warm:
             store.add(store.fingerprint(msg))
