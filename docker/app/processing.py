@@ -37,7 +37,7 @@ async def process(data: dict, pair: ChatPair) -> None:
 
 
 async def _delayed_send_media_group(key: tuple[str, str], pair: ChatPair) -> None:
-    """Ждёт MEDIA_GROUP_TIMEOUT секунд, затем отправляет коллаж из всех фото группы."""
+    """Ждёт MEDIA_GROUP_TIMEOUT секунд, затем отправляет коллаж из фото и видео отдельно."""
     await asyncio.sleep(MEDIA_GROUP_TIMEOUT)
     messages = _media_group_buffer.pop(key, [])
     if not messages:
@@ -50,45 +50,77 @@ async def _delayed_send_media_group(key: tuple[str, str], pair: ChatPair) -> Non
         if raw:
             entities = m.get("caption_entities") or []
             caption = strip_trailing_time(apply_text_links(raw, entities))
-            _html = build_html_with_links(raw, entities)
-            caption_html = strip_trailing_time(_html) if _html else None
+            _h = build_html_with_links(raw, entities)
+            caption_html = strip_trailing_time(_h) if _h else None
             break
 
-    photo_ids = []
+    # Разделяем фото и видео
+    photo_ids: list[str] = []
+    video_ids: list[str] = []
     for msg in messages:
         photos = msg.get("photo") or []
         fid = _pick_photo_id(photos, max_width=800)
         if fid:
             photo_ids.append(fid)
+        else:
+            video = msg.get("video") or {}
+            if video.get("file_id"):
+                video_ids.append(video["file_id"])
 
-    if not photo_ids:
+    if not photo_ids and not video_ids:
         return
 
-    logger.info(f"[{pair.name}] Медиагруппа {key[1]}: скачиваем {len(photo_ids)} фото для коллажа")
+    logger.info(
+        f"[{pair.name}] Медиагруппа {key[1]}: {len(photo_ids)} фото, {len(video_ids)} видео"
+    )
 
-    local_paths: list[str] = []
-    collage_path: str | None = None
-    try:
-        for fid in photo_ids:
-            local_paths.append(_download_telegram_file(fid, pair))
+    b = await BrowserManager.get(pair.name, pair.max_url)
+    async with b["lock"]:
+        maxc = MaxClient(b["page"])
+        await maxc.open_chat(pair.max_chat_id)
+        caption_used = False
 
-        collage_bytes = make_collage(local_paths)
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-        tmp.write(collage_bytes)
-        tmp.close()
-        collage_path = tmp.name
+        # Коллаж из фото
+        if photo_ids:
+            local_paths: list[str] = []
+            collage_path: str | None = None
+            try:
+                for fid in photo_ids:
+                    local_paths.append(_download_telegram_file(fid, pair))
+                collage_bytes = make_collage(local_paths)
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+                tmp.write(collage_bytes)
+                tmp.close()
+                collage_path = tmp.name
+                await maxc.send_photo(
+                    collage_path,
+                    caption=caption or "",
+                    caption_html=caption_html,
+                )
+                caption_used = True
+            finally:
+                for p in local_paths:
+                    if os.path.exists(p):
+                        os.remove(p)
+                if collage_path and os.path.exists(collage_path):
+                    os.remove(collage_path)
 
-        b = await BrowserManager.get(pair.name, pair.max_url)
-        async with b["lock"]:
-            maxc = MaxClient(b["page"])
-            await maxc.open_chat(pair.max_chat_id)
-            await maxc.send_photo(collage_path, caption=caption or "", caption_html=caption_html)
-    finally:
-        for p in local_paths:
-            if os.path.exists(p):
-                os.remove(p)
-        if collage_path and os.path.exists(collage_path):
-            os.remove(collage_path)
+        # Видео отдельно
+        for i, vid_id in enumerate(video_ids):
+            use_caption = not caption_used and i == 0
+            local_path: str | None = None
+            try:
+                local_path = _download_telegram_file(vid_id, pair)
+                await maxc.send_photo(
+                    local_path,
+                    caption=caption if use_caption else "",
+                    caption_html=caption_html if use_caption else None,
+                )
+                if use_caption:
+                    caption_used = True
+            finally:
+                if local_path and os.path.exists(local_path):
+                    os.remove(local_path)
 
 
 async def _process_single_message(message: dict, pair: ChatPair) -> None:
