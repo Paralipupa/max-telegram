@@ -278,14 +278,62 @@ class MaxClient:
                 pass
             await self.page.wait_for_timeout(250)
 
-    async def send_message(self, text):
+    async def _fill_editor_caption(self, editor, caption: str | None, caption_html: str | None) -> None:
+        """Заполняет редактор подписью — HTML (со ссылками) или plain text."""
+        import html as _html
+        prefix = f"{TELEGRAM_PREFIX} "
+        if caption_html:
+            try:
+                await self._paste_html(editor, _html.escape(prefix) + caption_html)
+                return
+            except Exception as e:
+                logger.warning(f"HTML caption paste failed ({e}), falling back to plain text")
+        try:
+            await editor.fill(f"{prefix}{caption or ''}")
+        except Exception:
+            try:
+                await editor.click(force=True)
+            except Exception:
+                pass
+            await self.page.keyboard.insert_text(caption or "")
+
+    async def _paste_html(self, editor, html_content: str) -> None:
+        """Вставляет HTML в Lexical-редактор через событие paste."""
+        await editor.evaluate(
+            """(el, htmlStr) => {
+                el.focus();
+                const dt = new DataTransfer();
+                dt.setData('text/html', htmlStr);
+                dt.setData('text/plain', el.textContent || '');
+                el.dispatchEvent(new ClipboardEvent('paste', {
+                    clipboardData: dt,
+                    bubbles: true,
+                    cancelable: true
+                }));
+            }""",
+            html_content,
+        )
+
+    async def send_message(self, text, html_text=None):
         logger.info(f"Sending message: {text[:20]}...")
         editor = await self._get_editor()
         await editor.click()
-        try:
-            await editor.fill(f"{TELEGRAM_PREFIX} {text}")
-        except Exception:
-            await self.page.keyboard.insert_text(f"{TELEGRAM_PREFIX} {text}")
+        prefix = f"{TELEGRAM_PREFIX} "
+        if html_text:
+            try:
+                import html as _html
+                await self._paste_html(editor, _html.escape(prefix) + html_text)
+            except Exception as e:
+                logger.warning(f"HTML paste failed ({e}), falling back to plain text")
+                try:
+                    await editor.fill(f"{prefix}{text}")
+                except Exception:
+                    await self.page.keyboard.insert_text(f"{prefix}{text}")
+        else:
+            try:
+                await editor.fill(f"{prefix}{text}")
+            except Exception:
+                await self.page.keyboard.insert_text(f"{prefix}{text}")
         await self.page.keyboard.press("Enter")
 
     async def debug_screenshot(self, name: str):
@@ -346,7 +394,7 @@ class MaxClient:
                 "File did not attach: <input type=file> has no files after upload attempts"
             )
 
-    async def send_file(self, file_path: str, caption: str | None = None) -> None:
+    async def send_file(self, file_path: str, caption: str | None = None, caption_html: str | None = None) -> None:
         """Отправляет произвольный файл через пункт меню «Файл»."""
         await self.page.wait_for_load_state("domcontentloaded")
         composer = await self._get_composer()
@@ -361,14 +409,7 @@ class MaxClient:
         ).first
         await editor.wait_for(state="visible", timeout=10000)
 
-        try:
-            await editor.fill(f"{TELEGRAM_PREFIX} {caption or ''}")
-        except Exception:
-            try:
-                await editor.click(force=True)
-            except Exception:
-                pass
-            await self.page.keyboard.insert_text(caption or "")
+        await self._fill_editor_caption(editor, caption, caption_html)
 
         sent = await self._wait_and_click_send_button(composer)
         if sent:
@@ -398,7 +439,7 @@ class MaxClient:
 
         logger.error("File send failed: no method worked")
 
-    async def send_photo(self, photo_path: str, caption: str | None = None) -> None:
+    async def send_photo(self, photo_path: str, caption: str | None = None, caption_html: str | None = None) -> None:
         await self.page.wait_for_load_state("domcontentloaded")
         composer = await self._get_composer()
         before_bubbles = await self.page.locator(".bubble").count()
@@ -463,14 +504,7 @@ class MaxClient:
         # await self.debug_screenshot("send_photo_4")
         # await self.debug_html("send_photo_4")
 
-        try:
-            await editor.fill(f"{TELEGRAM_PREFIX} {caption or ''}")
-        except Exception:
-            try:
-                await editor.click(force=True)
-            except Exception:
-                pass
-            await self.page.keyboard.insert_text(caption or '')
+        await self._fill_editor_caption(editor, caption, caption_html)
 
         # await self.debug_screenshot("send_photo_5")
         # await self.debug_html("send_photo_5")

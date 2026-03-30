@@ -8,8 +8,8 @@ MEDIA_GROUP_TIMEOUT = 2.0  # секунды ожидания хвостовых 
 TAIL_LIMIT = int(os.getenv("TAIL_LIMIT", "30"))
 HEADLESS = os.getenv("HEADLESS", "true") == "true"
 
-MAX_PREFIX = "⟨M⟩"
-TELEGRAM_PREFIX = "⟨T⟩"
+MAX_PREFIX = "\u29BF"
+TELEGRAM_PREFIX = "\u29BF"
 
 
 @dataclass

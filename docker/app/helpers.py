@@ -1,4 +1,48 @@
 import re
+import html as _html
+
+
+def build_html_with_links(text: str, entities: list[dict]) -> str | None:
+    """Строит HTML с тегами <a href> для text_link-сущностей.
+
+    Возвращает None, если ссылок нет (нет смысла использовать HTML).
+    Переводы строк превращаются в <br>.
+    """
+    if not text or not entities:
+        return None
+
+    links = sorted(
+        [e for e in entities if e.get("type") == "text_link" and e.get("url")],
+        key=lambda e: e["offset"],
+    )
+    if not links:
+        return None
+
+    def _esc(s: str) -> str:
+        return _html.escape(s).replace("\n", "<br>")
+
+    buf = text.encode("utf-16-le")
+    result = []
+    prev_end = 0
+
+    for entity in links:
+        start = entity["offset"] * 2
+        end = (entity["offset"] + entity["length"]) * 2
+
+        plain = buf[prev_end:start].decode("utf-16-le")
+        if plain:
+            result.append(_esc(plain))
+
+        link_text = buf[start:end].decode("utf-16-le")
+        url = entity["url"]
+        result.append(f'<a href="{_html.escape(url)}">{_html.escape(link_text)}</a>')
+        prev_end = end
+
+    remaining = buf[prev_end:].decode("utf-16-le")
+    if remaining:
+        result.append(_esc(remaining))
+
+    return "".join(result)
 
 
 def apply_text_links(text: str, entities: list[dict]) -> str:

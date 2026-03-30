@@ -3,7 +3,7 @@ from browser import BrowserManager
 from max_client import MaxClient
 from loguru import logger
 from constants import ChatPair, MEDIA_GROUP_TIMEOUT
-from helpers import strip_trailing_time, apply_text_links
+from helpers import strip_trailing_time, apply_text_links, build_html_with_links
 from collage import make_collage
 
 # Буфер медиагрупп: (pair_name, group_id) → список сообщений.
@@ -44,11 +44,14 @@ async def _delayed_send_media_group(key: tuple[str, str], pair: ChatPair) -> Non
         return
 
     caption = ""
+    caption_html = None
     for m in messages:
         raw = m.get("caption") or ""
         if raw:
             entities = m.get("caption_entities") or []
             caption = strip_trailing_time(apply_text_links(raw, entities))
+            _html = build_html_with_links(raw, entities)
+            caption_html = strip_trailing_time(_html) if _html else None
             break
 
     photo_ids = []
@@ -79,7 +82,7 @@ async def _delayed_send_media_group(key: tuple[str, str], pair: ChatPair) -> Non
         async with b["lock"]:
             maxc = MaxClient(b["page"])
             await maxc.open_chat(pair.max_chat_id)
-            await maxc.send_photo(collage_path, caption=caption or "")
+            await maxc.send_photo(collage_path, caption=caption or "", caption_html=caption_html)
     finally:
         for p in local_paths:
             if os.path.exists(p):
@@ -90,9 +93,11 @@ async def _delayed_send_media_group(key: tuple[str, str], pair: ChatPair) -> Non
 
 async def _process_single_message(message: dict, pair: ChatPair) -> None:
     """Обрабатывает одиночное (не медиагрупповое) сообщение."""
-    text = message.get("text") or message.get("caption") or ""
+    raw_text = message.get("text") or message.get("caption") or ""
     entities = message.get("entities") or message.get("caption_entities") or []
-    text = strip_trailing_time(apply_text_links(text, entities))
+    text = strip_trailing_time(apply_text_links(raw_text, entities))
+    _html = build_html_with_links(raw_text, entities)
+    html_text = strip_trailing_time(_html) if _html else None
     file_id, media_type = _extract_file_info(message)
     if not text and not file_id:
         raise ValueError("bad request")
@@ -101,7 +106,7 @@ async def _process_single_message(message: dict, pair: ChatPair) -> None:
     async with b["lock"]:
         maxc = MaxClient(b["page"])
         await maxc.open_chat(pair.max_chat_id)
-        await send_to_max(b, text=text, file_id=file_id, media_type=media_type, pair=pair)
+        await send_to_max(b, text=text, html_text=html_text, file_id=file_id, media_type=media_type, pair=pair)
 
 
 def _pick_photo_id(photos: list[dict], max_width: int | None = None) -> str | None:
@@ -170,7 +175,7 @@ def _download_telegram_file(file_id: str, pair: ChatPair) -> str:
 
 
 async def send_to_max(
-    b: dict, text: str, file_id: str | None = None, media_type: str | None = None, pair: ChatPair = None
+    b: dict, text: str, html_text: str | None = None, file_id: str | None = None, media_type: str | None = None, pair: ChatPair = None
 ) -> None:
     local_path = None
     maxc = MaxClient(b["page"])
@@ -181,11 +186,11 @@ async def send_to_max(
                 f"[{pair.name}] Скачан {media_type}: {local_path}, размер: {os.path.getsize(local_path)}"
             )
             if media_type in ("photo", "video"):
-                await maxc.send_photo(local_path, caption=text or "")
+                await maxc.send_photo(local_path, caption=text or "", caption_html=html_text)
             else:
-                await maxc.send_file(local_path, caption=text or "")
+                await maxc.send_file(local_path, caption=text or "", caption_html=html_text)
         elif text:
-            await maxc.send_message(text)
+            await maxc.send_message(text, html_text=html_text)
     except Exception as e:
         try:
             logger.error(f"[{pair.name}] send_to_max failed: {e} url={b['page'].url!r}")
