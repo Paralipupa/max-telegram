@@ -6,6 +6,8 @@ from max_message_extractors import (
     extract_attachment_items,
     extract_emojis,
     extract_image_urls,
+    extract_reply_quote,
+    extract_sender,
     extract_text_caption,
     merge_caption_and_emojis,
 )
@@ -24,6 +26,8 @@ async def bubble_to_message_info(bubble) -> Optional[dict]:
     caption = await extract_text_caption(bubble)
     emojis = await extract_emojis(bubble)
     caption = merge_caption_and_emojis(caption, emojis)
+    reply_quote = await extract_reply_quote(bubble)
+    sender = await extract_sender(bubble)
 
     if image_urls and attachment_items:
         return {
@@ -31,12 +35,14 @@ async def bubble_to_message_info(bubble) -> Optional[dict]:
             "image_urls": image_urls,
             "attachments": attachment_items,
             "caption": caption,
+            "reply_quote": reply_quote,
+            "sender": sender,
         }
     if image_urls:
-        return {"type": "images", "urls": image_urls, "caption": caption}
+        return {"type": "images", "urls": image_urls, "caption": caption, "reply_quote": reply_quote, "sender": sender}
     if attachment_items:
-        return {"type": "attachments", "items": attachment_items, "caption": caption}
+        return {"type": "attachments", "items": attachment_items, "caption": caption, "reply_quote": reply_quote, "sender": sender}
     if caption:
-        return {"type": "text", "text": caption}
+        return {"type": "text", "text": caption, "reply_quote": reply_quote, "sender": sender}
     return None
 

@@ -84,16 +84,81 @@ async def extract_attachment_items(bubble) -> list[dict[str, Any]]:
     return out
 
 
+async def extract_sender(bubble) -> dict:
+    """Определяет отправителя сообщения.
+
+    Возвращает {'is_outgoing': bool, 'name': str|None}.
+    Направление берётся из data-bubbles-variant="outgoing/incoming" внутри пузыря.
+    Имя отправителя для входящих ищется в ближайшем messageWrapper (может быть None
+    в личных чатах, где имя не показывается на каждом сообщении).
+    """
+    return await bubble.evaluate(
+        """(el) => {
+          // data-bubbles-variant — РОДИТЕЛЬ пузыря (bubble → bordersWrapper → div[data-bubbles-variant])
+          const variantEl = el.closest('[data-bubbles-variant]');
+          const variant = variantEl?.getAttribute('data-bubbles-variant');
+          const isOutgoing = variant === 'outgoing';
+
+          if (isOutgoing) return { is_outgoing: true, name: null };
+
+          // Для входящих: ищем имя отправителя в messageWrapper
+          const wrapper = el.closest('[class*="messageWrapper"]');
+          if (!wrapper) return { is_outgoing: false, name: null };
+
+          // В групповых чатах имя показывается в .name > .text рядом с сообщением
+          const nameEl = wrapper.querySelector(
+            '[class*="name"] [class*="text"], [class*="title"] [class*="text"]'
+          );
+          const name = nameEl ? (nameEl.innerText || '').trim() : null;
+          return { is_outgoing: false, name: name || null };
+        }"""
+    )
+
+
+async def extract_reply_quote(bubble) -> Optional[dict]:
+    """Извлекает блок цитаты из reply-сообщения MAX.
+
+    В DOM MAX reply-блок — это div[class*="link"] с button[class*="mark"] внутри.
+    Автор цитаты — span[class*="author"], текст — span[class*="text"] в той же кнопке.
+    Возвращает {'author': str, 'text': str} или None если это не reply.
+    """
+    return await bubble.evaluate(
+        """(el) => {
+          // Кнопка-цитата: div.link > button.mark
+          const btn = el.querySelector(
+            'div[class*="link"] button[class*="mark"]'
+          );
+          if (!btn) return null;
+
+          const authorEl = btn.querySelector('[class*="author"]');
+          const author = authorEl ? (authorEl.innerText || "").trim() : "";
+
+          // Текст цитаты — span.text внутри кнопки, но не внутри author
+          let text = "";
+          btn.querySelectorAll('span[class*="text"]').forEach((span) => {
+            if (authorEl && authorEl.contains(span)) return;
+            const t = (span.textContent || "").replace(/\\s+/g, " ").trim();
+            if (t) text = t;
+          });
+
+          return author || text ? { author, text } : null;
+        }"""
+    )
+
+
 async def extract_text_caption(bubble) -> Optional[str]:
-    """Extracts textual caption/body from a MAX message bubble.
+    """Извлекает текст основного сообщения, исключая блок цитаты (reply).
 
     Forwarded photo messages often split text across several spans or omit the
     exact class name ``text`` on the first node; ``read_message_text`` already
     uses a broader XPath — mirror that and aggregate spans, then fall back to
     bubble text with media/emoji nodes stripped so caption is not lost.
     """
+    # Исключаем span.text, которые находятся внутри div.link (блок цитаты)
     text_spans = await bubble.query_selector_all(
-        'xpath=.//span[contains(@class, "text")]'
+        'xpath=.//span[contains(@class, "text")'
+        ' and not(ancestor::div[contains(@class, "link")])'
+        ' and not(ancestor::button[contains(@class, "mark")])]'
     )
     parts: list[str] = []
     for text_span in text_spans:
@@ -104,12 +169,16 @@ async def extract_text_caption(bubble) -> Optional[str]:
     if parts:
         return " ".join(parts)
 
-    # Forwarded / non-standard layout: caption lives outside span.text
+    # Фоллбек: весь текст пузыря без блока цитаты, медиа и эмодзи
     caption = await bubble.evaluate(
         """(el) => {
           const clone = el.cloneNode(true);
+          // Удаляем reply-блок (div.link > button.mark)
+          clone.querySelectorAll('div[class*="link"]').forEach((n) => n.remove());
           clone.querySelectorAll("div.media").forEach((n) => n.remove());
           clone.querySelectorAll("span.emoji").forEach((n) => n.remove());
+          // Удаляем meta (время)
+          clone.querySelectorAll('[class*="meta"]').forEach((n) => n.remove());
           const raw = (clone.innerText || "").replace(/\\s+/g, " ").trim();
           return raw || "";
         }"""
