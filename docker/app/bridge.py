@@ -26,6 +26,11 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
     store = DedupStore(pair.dedup_path)
     await _warmup_dedup_if_needed(store, maxc)
     seen_count = store.count()
+    if seen_count == 0:
+        logger.info(
+            f"[{pair.name}] Дедупликация пустая: {seen_count}. Завершаем bridge."
+        )
+        raise SystemExit(f"[{pair.name}] Bridge завершён: дедупликация пустая")
     last_count_refresh = time.monotonic()
 
     logger.info(
@@ -96,14 +101,33 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
         await asyncio.sleep(poll_interval)
 
 
+def _format_reply_prefix(msg: dict) -> str:
+    """Возвращает строку с цитатой для reply-сообщений, или пустую строку."""
+    rq = msg.get("reply_quote")
+    if not rq:
+        return ""
+    author = (rq.get("author") or "").strip()
+    text = (rq.get("text") or "").strip()
+    if not author and not text:
+        return ""
+    quote = f"{author}: «{text}»" if author and text else (author or f"«{text}»")
+    return f"↩ {quote}\n"
+
+
 def _format_images_caption(msg: dict) -> str:
+    reply = _format_reply_prefix(msg)
     caption = msg.get("caption") or msg.get("text")
-    return f"{MAX_PREFIX} {caption}" if caption else f"{MAX_PREFIX} [фото]"
+    body = f"{reply}{caption}" if caption else f"{reply}[фото]"
+    sender = msg.get("sender",{}).get("name") or ""
+    return f"{sender}{MAX_PREFIX} {body}"
 
 
 def _format_attachments_caption(msg: dict) -> str:
+    reply = _format_reply_prefix(msg)
     caption = msg.get("caption")
-    return f"{MAX_PREFIX} {caption}" if caption else f"{MAX_PREFIX} [файл]"
+    body = f"{reply}{caption}" if caption else f"{reply}[файл]"
+    sender = msg.get("sender",{}).get("name") or ""
+    return f"{sender}{MAX_PREFIX} {body}"
 
 
 async def _download_or_url(maxc: MaxClient, url: str) -> str | bytes:
@@ -136,6 +160,9 @@ async def _send_attachments(
 async def _send_to_telegram(
     msg: dict, message_text: str, maxc: MaxClient, pair: ChatPair
 ) -> None:
+    await maxc.debug_screenshot("send_to_telegram_1")
+    await maxc.debug_html("send_to_telegram_1")
+
     if msg["type"] == "images":
         caption = strip_trailing_time(_format_images_caption(msg))
         urls = msg.get("urls") or []
@@ -169,7 +196,9 @@ async def _send_to_telegram(
                 send_document(pair, data, None, filename=name or "file")
         return
     if message_text:
-        send(pair, f"{MAX_PREFIX} {message_text}")
+        reply = _format_reply_prefix(msg)
+        sender = msg.get("sender",{}).get("name") or ""
+        send(pair, f"{sender}{MAX_PREFIX} {reply}{message_text}")
     else:
         logger.warning(
             f"[{pair.name}] Нет текста в сообщении: {msg} (type={msg['type']})"
