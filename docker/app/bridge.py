@@ -53,9 +53,9 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
             if now - last_page_reload >= PAGE_RELOAD_INTERVAL:
                 last_page_reload = now  # обновляем заранее, чтобы не зациклиться при ошибке
                 async with b["lock"]:
-                    logger.info(
-                        f"[{pair.name}] Перезагружаем страницу браузера для освобождения памяти"
-                    )
+                    # logger.info(
+                    #     f"[{pair.name}] Перезагружаем страницу браузера для освобождения памяти"
+                    # )
                     try:
                         await BrowserManager.reload_page(pair.name)
                     except Exception as reload_err:
@@ -160,8 +160,8 @@ async def _send_attachments(
 async def _send_to_telegram(
     msg: dict, message_text: str, maxc: MaxClient, pair: ChatPair
 ) -> None:
-    await maxc.debug_screenshot("send_to_telegram_1")
-    await maxc.debug_html("send_to_telegram_1")
+    # await maxc.debug_screenshot("send_to_telegram_1")
+    # await maxc.debug_html("send_to_telegram_1")
 
     if msg["type"] == "images":
         caption = strip_trailing_time(_format_images_caption(msg))
@@ -250,6 +250,7 @@ async def _process_messages(
             continue
 
         try:
+            logger.info(f" fingerprint --> {fp} msg --> {msg}")
             await _send_to_telegram(msg, message_text, maxc, pair)
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка при отправке сообщения: {e}")

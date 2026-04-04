@@ -69,7 +69,7 @@ class BrowserManager:
         if cls._context is None:
             return
         await cls._context.storage_state(path=path)
-        logger.info(f"auth.json обновлён ({path})")
+        # logger.info(f"auth.json обновлён ({path})")
 
     @classmethod
     def is_session_valid(cls, page) -> bool:
