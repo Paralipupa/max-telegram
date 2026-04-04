@@ -250,6 +250,7 @@ async def _process_messages(
             continue
 
         try:
+            logger.info(f" fingerprint --> {fp} msg --> {msg}")
             await _send_to_telegram(msg, message_text, maxc, pair)
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка при отправке сообщения: {e}")
