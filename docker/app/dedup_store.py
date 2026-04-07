@@ -51,7 +51,7 @@ class DedupStore:
         logger.info(f"Инициализировано дедупликацию: {self.db_path}")
 
     @staticmethod
-    def fingerprint(message: dict[str, Any]) -> str:
+    def fingerprint(message: dict[str, Any]) -> tuple[str, str]:
         normalized = DedupStore._normalize_message(message)
         try:
             text = (
@@ -68,7 +68,7 @@ class DedupStore:
         except Exception as e:
             logger.error(f"Ошибка при создании fingerprint: {e}")
             text = "error"
-        return hashlib.sha256(text.encode("utf-8")).hexdigest()
+        return hashlib.sha256(text.encode("utf-8")).hexdigest(), text
 
 
     @staticmethod

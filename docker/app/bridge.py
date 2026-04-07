@@ -78,7 +78,9 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
                         try:
                             warm = await maxc.get_recent_messages_info(limit=30)
                             for msg in warm:
-                                store.add(store.fingerprint(msg))
+                                fp, text = store.fingerprint(msg)
+                                logger.info(f" warmup fingerprint --> {fp} text --> {text} msg --> {msg}")
+                                store.add(fp)
                             seen_count = store.count()
                             logger.info(
                                 f"[{pair.name}] Прогрев после сброса успешен: {seen_count} записей"
@@ -228,7 +230,9 @@ async def _warmup_dedup_if_needed(store: DedupStore, maxc: MaxClient) -> None:
         count = 30
         warm = await maxc.get_recent_messages_info(limit=count)
         for msg in warm:
-            store.add(store.fingerprint(msg))
+            fp, text = store.fingerprint(msg)
+            logger.info(f" warmup fingerprint --> {fp} text --> {text} msg --> {msg}")
+            store.add(fp)
     except Exception as e:
         logger.error(f"Ошибка прогрева дедупа: {e}")
 
@@ -245,12 +249,12 @@ async def _process_messages(
         message_text = strip_trailing_time(message_text)
         if TELEGRAM_PREFIX in message_text:
             continue
-        fp = store.fingerprint(msg)
-        if store.has(fp):
+        fp, text = store.fingerprint(msg)
+        if store.has(fp):   
             continue
 
         try:
-            logger.info(f" fingerprint --> {fp} msg --> {msg}")
+            logger.info(f" process fingerprint --> {fp} text --> {text} msg --> {msg}")
             await _send_to_telegram(msg, message_text, maxc, pair)
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка при отправке сообщения: {e}")
