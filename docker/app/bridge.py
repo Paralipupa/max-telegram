@@ -245,16 +245,16 @@ async def _process_messages(
     pair: ChatPair,
 ) -> int:
     for msg in reversed(msgs):
-        message_text = msg.get("text") or msg.get("caption") or ""
-        message_text = strip_trailing_time(message_text)
-        if TELEGRAM_PREFIX in message_text:
-            continue
         fp, text = store.fingerprint(msg)
+        if TELEGRAM_PREFIX in text:
+            continue
         if store.has(fp):   
             continue
 
         try:
             logger.info(f" process fingerprint --> {fp} text --> {text} msg --> {msg}")
+            message_text = msg.get("text") or msg.get("caption") or ""
+            message_text = strip_trailing_time(message_text)
             await _send_to_telegram(msg, message_text, maxc, pair)
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка при отправке сообщения: {e}")

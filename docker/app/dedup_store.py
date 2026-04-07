@@ -55,21 +55,21 @@ class DedupStore:
         normalized = DedupStore._normalize_message(message)
         try:
             text = (
-                normalized.get("text","")
-                or normalized.get("caption","")
-                or normalized.get("items", [dict(url="")])[0].get("caption","")
-                or normalized.get("raw",{}).get("text","") or normalized.get("raw",{}).get("caption","")
-                or normalized.get("items", [dict(url="")])[0].get("url","")
-                or ""
-            ) + (normalized.get("raw",{}).get("sender",{}).get("name","") or "empty") 
-            # payload = json.dumps(
-            #     normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-            # ).encode("utf-8")
+                (message.get("text") or "")
+                + (message.get("caption") or "")
+                + (message.get("sender", {}).get("name") or "")
+            )
+            if not text:
+                payload = json.dumps(
+                    normalized,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                return hashlib.sha256(payload.encode("utf-8")).hexdigest(), text
         except Exception as e:
             logger.error(f"Ошибка при создании fingerprint: {e}")
-            text = "error"
         return hashlib.sha256(text.encode("utf-8")).hexdigest(), text
-
 
     @staticmethod
     def _strip_query(url: str) -> str:
