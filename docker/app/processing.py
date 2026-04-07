@@ -17,7 +17,7 @@ def log_background_task(task: asyncio.Task) -> None:
     except asyncio.CancelledError:
         return
     if exc is not None:
-        logger.error("Background process failed: {!r}", exc)
+        logger.error("Background process failed: {exc}")
 
 
 async def process(data: dict, pair: ChatPair) -> None:
