@@ -146,6 +146,17 @@ class DedupStore:
         with self._connect() as conn:
             return int(conn.execute("SELECT COUNT(*) FROM seen").fetchone()[0])
 
+    def replace_all_fingerprints(self, fingerprints: list[str]) -> None:
+        """Полностью заменяет таблицу: только переданные отпечатки (одна транзакция)."""
+        now = int(time.time())
+        with self._connect() as conn:
+            conn.execute("DELETE FROM seen")
+            conn.executemany(
+                "INSERT OR IGNORE INTO seen(fingerprint, created_at) VALUES(?, ?)",
+                [(fp, now) for fp in fingerprints],
+            )
+        self.prune()
+
     def add(self, fingerprint: str) -> None:
         now = int(time.time())
         with self._connect() as conn:

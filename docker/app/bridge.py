@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import os
 import time
 from constants import MAX_PREFIX, TELEGRAM_PREFIX, TAIL_LIMIT, ChatPair
@@ -35,6 +36,12 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
 
     logger.info(
         f"[{pair.name}] Дедупликация прогрета: {seen_count}. Слушаем сообщения..."
+    )
+    asyncio.create_task(
+        _midnight_dedup_reset_loop(
+            pair.name, b, store, maxc, keep_last=TAIL_LIMIT
+        ),
+        name=f"midnight-dedup-{pair.name}",
     )
     last_page_reload = time.monotonic()
     PAGE_RELOAD_INTERVAL = (
@@ -79,7 +86,7 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
                             warm = await maxc.get_recent_messages_info(limit=30)
                             for msg in warm:
                                 fp, text = store.fingerprint(msg)
-                                logger.info(f" warmup fingerprint --> {fp} text --> {text[:30]}")
+                                # logger.info(f" warmup fingerprint --> {fp} text --> {text[:30]}")
                                 store.add(fp)
                             seen_count = store.count()
                             logger.info(
@@ -223,6 +230,53 @@ def _dynamic_tail_limit(seen_count: int, tail_limit: int = TAIL_LIMIT) -> int:
     return min(tail_limit, max(1, seen_count))
 
 
+async def _midnight_dedup_reset_loop(
+    pair_name: str,
+    b: dict,
+    store: DedupStore,
+    maxc: MaxClient,
+    *,
+    keep_last: int = 30,
+) -> None:
+    """В локальную полночь обнуляет дедуп и оставляет только отпечатки последних пузырей Max."""
+    while True:
+        now = datetime.datetime.now()
+        today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        next_midnight = today_midnight + datetime.timedelta(days=1)
+        delay_sec = (next_midnight - now).total_seconds()
+        if delay_sec <= 0:
+            next_midnight = next_midnight + datetime.timedelta(days=1)
+            delay_sec = (next_midnight - now).total_seconds()
+        await asyncio.sleep(delay_sec)
+        try:
+            async with b["lock"]:
+                n = await _reset_dedup_to_recent_fingerprints(
+                    store, maxc, limit=keep_last
+                )
+            logger.info(
+                f"[{pair_name}] Полночь: дедуп сброшен, в БД только последние сообщения ({n} записей)"
+            )
+        except Exception as e:
+            logger.error(f"[{pair_name}] Сброс дедупа в полночь: {e}")
+
+
+async def _reset_dedup_to_recent_fingerprints(
+    store: DedupStore,
+    maxc: MaxClient,
+    *,
+    limit: int = 30,
+) -> int:
+    """Читает с Max последние `limit` пузырей и полностью заменяет ими таблицу дедупа."""
+    warm = await maxc.get_recent_messages_info(limit=limit)
+    fingerprints: list[str] = []
+    for msg in warm:
+        fp, text = store.fingerprint(msg)
+        # logger.info(f" midnight reset fingerprint --> {fp} text --> {text[:30]}")
+        fingerprints.append(fp)
+    store.replace_all_fingerprints(fingerprints)
+    return store.count()
+
+
 async def _warmup_dedup_if_needed(store: DedupStore, maxc: MaxClient) -> None:
     if store.count() != 0:
         return
@@ -231,7 +285,7 @@ async def _warmup_dedup_if_needed(store: DedupStore, maxc: MaxClient) -> None:
         warm = await maxc.get_recent_messages_info(limit=count)
         for msg in warm:
             fp, text = store.fingerprint(msg)
-            logger.info(f" warmup fingerprint --> {fp} text --> {text[:30]}")
+            # logger.info(f" warmup fingerprint --> {fp} text --> {text[:30]}")
             store.add(fp)
     except Exception as e:
         logger.error(f"Ошибка прогрева дедупа: {e}")
