@@ -69,7 +69,7 @@ class DedupStore:
                 return hashlib.sha256(payload.encode("utf-8")).hexdigest(), text
         except Exception as e:
             logger.error(f"Ошибка при создании fingerprint: {e}")
-        return hashlib.sha256(text.encode("utf-8")).hexdigest(), text
+        return hashlib.sha256(text[:30].encode("utf-8")).hexdigest(), text
 
     @staticmethod
     def _strip_query(url: str) -> str:
