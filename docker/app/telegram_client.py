@@ -1,5 +1,5 @@
 import requests
-from constants import ChatPair
+from constants import ChatPair, TELEGRAM_PREFIX
 from loguru import logger
 
 
@@ -15,6 +15,9 @@ def send_photo(pair: ChatPair, photo_url: str, caption: str | None = None) -> No
     logger.info(f"[{pair.name}] Отправляем фото: {caption[:20]}...")
     data: dict = {"chat_id": pair.telegram_chat_id, "photo": photo_url}
     if caption:
+        prefix, text = caption.split(TELEGRAM_PREFIX)
+        if text.strip().startswith(prefix):
+            caption = prefix + TELEGRAM_PREFIX + text.strip()[len(prefix):]
         data["caption"] = caption
     requests.post(f"{pair.tg_api}/sendPhoto", json=data)
     logger.info(f"[{pair.name}] Фото отправлено")
