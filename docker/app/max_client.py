@@ -83,6 +83,8 @@ class MaxClient:
         if not bubbles:
             return []
         tail = bubbles[-max(1, int(limit)) :]
+        await self.debug_screenshot("messages_info_1")
+        await self.debug_html("messages_info_1")
         out: list[dict] = []
         for bubble in tail:
             info = await self._bubble_to_message_info(bubble)
@@ -356,13 +358,13 @@ class MaxClient:
     async def debug_screenshot(self, name: str):
         path = f"/tmp/debug_{name}.png"
         await self.page.screenshot(path=path)
-        logger.info(f"Screenshot: {path}")
+        # logger.info(f"Screenshot: {path}")
 
     async def debug_html(self, name: str):
         path = f"/tmp/debug_{name}.html"
         with open(path, "w") as f:
             f.write(await self.page.content())
-        logger.info(f"HTML dump: {path}")
+        # logger.info(f"HTML dump: {path}")
 
     async def download_file(self, url: str) -> bytes:
         """Загружает файл через браузерный контекст (с авторизацией Max)."""

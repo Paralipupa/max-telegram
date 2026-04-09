@@ -5,14 +5,16 @@ from typing import Any, Optional
 
 async def extract_image_urls(bubble) -> list[str]:
     """Extracts image URLs from a MAX message bubble."""
-    imgs = await bubble.query_selector_all("div.media img")
+    imgs = await bubble.query_selector_all("span.media img")
+    if not imgs:
+        imgs = await bubble.query_selector_all("div.media img")
     urls: list[str] = []
     for img in imgs:
         src = await img.get_attribute("src")
-        if src:
+        # пропускаем base64-заглушки (1x1 пиксель для Lottie-анимаций)
+        if src and not src.startswith("data:image"):
             urls.append(src)
     return urls
-
 
 async def extract_attachment_items(bubble) -> list[dict[str, Any]]:
     """Non-image attachments: file links and video sources inside a bubble.
