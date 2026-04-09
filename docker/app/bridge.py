@@ -306,7 +306,7 @@ async def _process_messages(
             continue
 
         try:
-            logger.info(f" process fingerprint --> {fp} text --> {text[:30]}")
+            logger.info(f" process fingerprint --> {fp} text --> {text[:30]} msg --> {msg}")
             message_text = msg.get("text") or msg.get("caption") or ""
             message_text = strip_trailing_time(message_text)
             await _send_to_telegram(msg, message_text, maxc, pair)
