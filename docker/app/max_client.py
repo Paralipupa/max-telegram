@@ -292,7 +292,7 @@ class MaxClient:
         import html as _html
 
         prefix = f"{TELEGRAM_PREFIX} "
-        if self.first_name:
+        if self.first_name and (not caption_html or self.first_name not in caption_html):
             prefix = f"{self.first_name} {prefix} \n"
         if caption_html:
             try:
@@ -335,7 +335,7 @@ class MaxClient:
         editor = await self._get_editor()
         await editor.click()
         prefix = f"{TELEGRAM_PREFIX} "
-        if self.first_name:
+        if self.first_name and (not html_text or self.first_name not in html_text):
             prefix = f"{self.first_name} {prefix} \n"
         if html_text:
             try:
