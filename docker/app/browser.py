@@ -91,7 +91,9 @@ class BrowserManager:
         if not entry:
             return
         await cls._goto(entry["page"], pair_name, entry["url"])
-        await entry["page"].wait_for_selector(".bubble", timeout=15000)
+        await entry["page"].wait_for_selector(
+            ".bubble", state="attached", timeout=30000
+        )
 
     @classmethod
     async def save_auth_state(cls, path: str = "/data/auth.json") -> None:

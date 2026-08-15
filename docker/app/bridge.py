@@ -25,13 +25,15 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
     maxc = MaxClient(b["page"])
 
     store = DedupStore(pair.dedup_path)
-    await _warmup_dedup_if_needed(store, maxc)
-    seen_count = store.count()
-    if seen_count == 0:
-        logger.info(
-            f"[{pair.name}] Дедупликация пустая: {seen_count}. Завершаем bridge."
-        )
-        raise SystemExit(f"[{pair.name}] Bridge завершён: дедупликация пустая")
+    seen_count = 0
+    while seen_count == 0:
+        await _warmup_dedup_if_needed(store, maxc, pair.name)
+        seen_count = store.count()
+        if seen_count == 0:
+            logger.warning(
+                f"[{pair.name}] Дедупликация пока пустая; повторяем прогрев через 10 секунд"
+            )
+            await asyncio.sleep(10)
     last_count_refresh = time.monotonic()
 
     logger.info(
@@ -277,7 +279,9 @@ async def _reset_dedup_to_recent_fingerprints(
     return store.count()
 
 
-async def _warmup_dedup_if_needed(store: DedupStore, maxc: MaxClient) -> None:
+async def _warmup_dedup_if_needed(
+    store: DedupStore, maxc: MaxClient, pair_name: str
+) -> None:
     if store.count() != 0:
         return
     try:
@@ -288,7 +292,7 @@ async def _warmup_dedup_if_needed(store: DedupStore, maxc: MaxClient) -> None:
             # logger.info(f" warmup fingerprint --> {fp} text --> {text[:30]}")
             store.add(fp)
     except Exception as e:
-        logger.error(f"Ошибка прогрева дедупа: {e}")
+        logger.error(f"[{pair_name}] Ошибка прогрева дедупа: {e}")
 
 
 async def _process_messages(

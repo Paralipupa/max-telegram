@@ -36,7 +36,7 @@ def create_app(pairs: list[ChatPair]) -> FastAPI:
 def _register_webhook(app: FastAPI, pair: ChatPair) -> None:
     """Регистрирует POST-маршрут для конкретной пары."""
     path = pair.webhook_path
-    logger.info(f"[{pair.name}] Регистрируем webhook: {path}")
+    logger.info(f"[{pair.name}] Регистрируем webhook")
 
     async def hook(request: Request) -> str:
         try:
