@@ -1,5 +1,5 @@
 import asyncio
-from playwright.async_api import async_playwright
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError, async_playwright
 from constants import HEADLESS
 from loguru import logger
 
@@ -12,8 +12,34 @@ class BrowserManager:
     _pw = None
     _browser = None
     _context = None
+    _navigation_timeout = 60_000
+    _navigation_attempts = 3
     # pair_name → {"page": Page, "lock": asyncio.Lock}
     _pages: dict[str, dict] = {}
+
+    @classmethod
+    async def _goto(cls, page, pair_name: str, url: str) -> None:
+        """Открывает страницу MAX с повторами при временном сетевом таймауте."""
+        for attempt in range(1, cls._navigation_attempts + 1):
+            try:
+                await page.goto(
+                    url,
+                    wait_until="domcontentloaded",
+                    timeout=cls._navigation_timeout,
+                )
+                return
+            except PlaywrightTimeoutError:
+                if attempt == cls._navigation_attempts:
+                    logger.error(
+                        f"[{pair_name}] MAX не загрузился после "
+                        f"{cls._navigation_attempts} попыток: {url}"
+                    )
+                    raise
+                logger.warning(
+                    f"[{pair_name}] Таймаут загрузки MAX, повторная попытка "
+                    f"{attempt + 1}/{cls._navigation_attempts}"
+                )
+                await asyncio.sleep(5)
 
     @classmethod
     async def get(cls, pair_name: str, initial_url: str) -> dict:
@@ -37,7 +63,11 @@ class BrowserManager:
             cls._context = await cls._browser.new_context(storage_state="/data/auth.json")
 
         page = await cls._context.new_page()
-        await page.goto(initial_url)
+        try:
+            await cls._goto(page, pair_name, initial_url)
+        except Exception:
+            await page.close()
+            raise
 
         if not cls.is_session_valid(page):
             await cls._browser.close()
@@ -60,7 +90,7 @@ class BrowserManager:
         entry = cls._pages.get(pair_name)
         if not entry:
             return
-        await entry["page"].goto(entry["url"])
+        await cls._goto(entry["page"], pair_name, entry["url"])
         await entry["page"].wait_for_selector(".bubble", timeout=15000)
 
     @classmethod
