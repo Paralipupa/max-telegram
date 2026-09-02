@@ -266,14 +266,14 @@ async def _reset_dedup_to_recent_fingerprints(
     store: DedupStore,
     maxc: MaxClient,
     *,
-    limit: int = 30,
+    limit: int = TAIL_LIMIT*3,
 ) -> int:
     """Читает с Max последние `limit` пузырей и полностью заменяет ими таблицу дедупа."""
     warm = await maxc.get_recent_messages_info(limit=limit)
     fingerprints: list[str] = []
     for msg in warm:
         fp, text = store.fingerprint(msg)
-        # logger.info(f" midnight reset fingerprint --> {fp} text --> {text[:30]}")
+        logger.info(f" midnight reset fingerprint --> {fp} text --> {text[:30]}")
         fingerprints.append(fp)
     store.replace_all_fingerprints(fingerprints)
     return store.count()
@@ -285,11 +285,11 @@ async def _warmup_dedup_if_needed(
     if store.count() != 0:
         return
     try:
-        count = 30
+        count = TAIL_LIMIT*3
         warm = await maxc.get_recent_messages_info(limit=count)
         for msg in warm:
             fp, text = store.fingerprint(msg)
-            # logger.info(f" warmup fingerprint --> {fp} text --> {text[:30]}")
+            logger.info(f"--> {text[:30]}")
             store.add(fp)
     except Exception as e:
         logger.error(f"[{pair_name}] Ошибка прогрева дедупа: {e}")
