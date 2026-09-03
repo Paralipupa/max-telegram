@@ -272,19 +272,42 @@ class MaxClient:
                 "el => !!(el.files && el.files.length > 0)"
             )
 
-        # 1) Open attachment menu (no filechooser yet)
-        await upload_btn.click()
-        # Menu lives in .popoverPortal → role=dialog (see debug HTML)
-        photo_video = self.page.locator(
-            '[role="dialog"] [role="menuitem"][aria-label="Фото или видео"]'
-        ).first
+        # Основной путь: скрытый input уже присутствует в DOM. Это надёжнее,
+        # чем зависеть от роли и текста пункта меню, которые MAX меняет.
         try:
-            await photo_video.wait_for(state="visible", timeout=8000)
-        except Exception:
-            photo_video = self.page.get_by_role("menuitem", name="Фото или видео")
-            await photo_video.wait_for(state="visible", timeout=5000)
+            await file_input.set_input_files(photo_path)
+            await self.page.wait_for_timeout(300)
+            if await input_has_files():
+                logger.info("Photo attached directly through file input")
+                return
+        except Exception as ex:
+            logger.warning(
+                f"Direct photo input failed ({ex}), trying attachment menu"
+            )
 
-        # 2) Choosing «Фото или видео» triggers the file chooser
+        # Резервный путь: открыть меню вложений и выбрать фото/видео.
+        await upload_btn.click()
+        menu_selectors = [
+            '[role="menuitem"][aria-label*="Фото"]',
+            '[role="menuitem"][aria-label*="фото"]',
+            '[role="menuitem"][aria-label*="Photo"]',
+            '[role="dialog"] :text-is("Фото или видео")',
+            '[role="dialog"] :text-is("Фото и видео")',
+            '[role="dialog"] :text-is("Photo or video")',
+        ]
+        photo_video = None
+        for selector in menu_selectors:
+            candidate = self.page.locator(selector).first
+            try:
+                await candidate.wait_for(state="visible", timeout=2000)
+                photo_video = candidate
+                break
+            except Exception:
+                continue
+        if photo_video is None:
+            raise TimeoutError("photo/video item not found in attachment menu")
+
+        # Выбор пункта «Фото или видео» вызывает системный file chooser.
         try:
             async with self.page.expect_file_chooser(timeout=15000) as fc_info:
                 await photo_video.click()
