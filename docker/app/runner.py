@@ -45,7 +45,15 @@ async def main():
         await BrowserManager.get(pair.name, pair.max_url)
 
     app = create_app(pairs)
-    config = uvicorn.Config(app, host="0.0.0.0", port=8081, log_level="info")
+    # Не пишем HTTP access-log: внешние сканеры засоряют его тысячами 404,
+    # а путь Telegram webhook содержит секретный bot token.
+    config = uvicorn.Config(
+        app,
+        host="0.0.0.0",
+        port=8081,
+        log_level="info",
+        access_log=False,
+    )
     server = uvicorn.Server(config)
 
     await asyncio.gather(

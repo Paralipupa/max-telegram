@@ -211,13 +211,61 @@ class MaxClient:
         await upload_input.wait_for(state="attached", timeout=10000)
         return upload_input
 
+    async def _get_upload_button(self, timeout_ms: int = 15000):
+        """Возвращает видимую кнопку вложений, не привязываясь к DOM композера."""
+        selectors = [
+            'button[aria-label="Загрузить файл"]',
+            'button[aria-label*="Загрузить"]',
+            'button[aria-label*="Прикрепить"]',
+            'button[aria-label*="Upload"]',
+            'button[aria-label*="Attach"]',
+            'button[title*="Загрузить"]',
+            'button[title*="Прикрепить"]',
+            'button[title*="Upload"]',
+            'button[title*="Attach"]',
+        ]
+        deadline = time.monotonic() + timeout_ms / 1000
+        while time.monotonic() < deadline:
+            for selector in selectors:
+                matches = self.page.locator(selector)
+                for index in range(await matches.count() - 1, -1, -1):
+                    button = matches.nth(index)
+                    try:
+                        if await button.is_visible() and await button.is_enabled():
+                            return button
+                    except Exception:
+                        continue
+            await self.page.wait_for_timeout(250)
+        raise TimeoutError("visible upload/attachment button not found")
+
+    async def _get_photo_input(self, composer, timeout_ms: int = 15000):
+        """Находит прикреплённый file input для фото, включая порталы вне композера."""
+        deadline = time.monotonic() + timeout_ms / 1000
+        selectors = [
+            'input[type="file"][accept*="image"]',
+            'input[type="file"][multiple]',
+            'input[type="file"]',
+        ]
+        while time.monotonic() < deadline:
+            for root in (composer, self.page):
+                for selector in selectors:
+                    matches = root.locator(selector)
+                    count = await matches.count()
+                    if count:
+                        candidate = matches.nth(count - 1)
+                        try:
+                            await candidate.wait_for(state="attached", timeout=500)
+                            return candidate
+                        except Exception:
+                            continue
+            await self.page.wait_for_timeout(250)
+        raise TimeoutError("photo file input not found")
+
     async def _attach_photo_file(self, composer, photo_path: str) -> None:
         """MAX opens a menu (Фото или видео / Файл / Контакт) on the paperclip click;
         the native file chooser only appears after choosing «Фото или видео»."""
-        upload_btn = composer.locator('button[aria-label="Загрузить файл"]').first
-        await upload_btn.wait_for(state="visible", timeout=10000)
-        file_input = composer.locator('input[type="file"]').first
-        await file_input.wait_for(state="attached", timeout=10000)
+        upload_btn = await self._get_upload_button()
+        file_input = await self._get_photo_input(composer)
 
         async def input_has_files() -> bool:
             return await file_input.evaluate(
@@ -373,10 +421,8 @@ class MaxClient:
 
     async def _attach_document_file(self, composer, file_path: str) -> None:
         """Прикрепляет файл через меню «Файл» (не «Фото или видео»)."""
-        upload_btn = composer.locator('button[aria-label="Загрузить файл"]').first
-        await upload_btn.wait_for(state="visible", timeout=10000)
-        file_input = composer.locator('input[type="file"]').first
-        await file_input.wait_for(state="attached", timeout=10000)
+        upload_btn = await self._get_upload_button()
+        file_input = await self._get_photo_input(composer)
 
         async def input_has_files() -> bool:
             return await file_input.evaluate(
