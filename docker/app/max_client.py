@@ -198,7 +198,9 @@ class MaxClient:
             except Exception:
                 pass
 
-        return False
+        # Композер может быть определён по вложению, а фактическая кнопка
+        # отправки находиться выше или в соседнем portal-контейнере.
+        return await self._try_click_send_button()
 
     async def _get_upload_input(self):
         composer = await self._get_composer()
@@ -603,7 +605,17 @@ class MaxClient:
         # await self.debug_html("send_photo_6")
 
         if not sent:
-            raise RuntimeError("Photo send button was not found or was disabled")
+            # Enter безопасен только после подтверждённого появления превью:
+            # без этой проверки раньше могла отправляться одна подпись.
+            try:
+                await editor.click(force=True)
+                await self.page.keyboard.press("Enter")
+                sent = True
+                logger.info("Photo send triggered via Enter with preview present")
+            except Exception as ex:
+                raise RuntimeError(
+                    "Photo send button was not found and Enter failed"
+                ) from ex
 
         # Ждём увеличения количества баблов
         await self.page.wait_for_function(
