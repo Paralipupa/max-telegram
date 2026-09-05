@@ -265,32 +265,27 @@ class MaxClient:
         """MAX opens a menu (Фото или видео / Файл / Контакт) on the paperclip click;
         the native file chooser only appears after choosing «Фото или видео»."""
         upload_btn = await self._get_upload_button()
-        file_input = await self._get_photo_input(composer)
 
-        async def input_has_files() -> bool:
-            return await file_input.evaluate(
-                "el => !!(el.files && el.files.length > 0)"
-            )
-
-        # Основной путь: скрытый input уже присутствует в DOM. Это надёжнее,
-        # чем зависеть от роли и текста пункта меню, которые MAX меняет.
+        # В некоторых версиях MAX скрепка сразу открывает системный выбор файла.
         try:
-            await file_input.set_input_files(photo_path)
-            await self.page.wait_for_timeout(300)
-            if await input_has_files():
-                logger.info("Photo attached directly through file input")
-                return
-        except Exception as ex:
-            logger.warning(
-                f"Direct photo input failed ({ex}), trying attachment menu"
-            )
+            async with self.page.expect_file_chooser(timeout=3000) as fc_info:
+                await upload_btn.click()
+            file_chooser = await fc_info.value
+            await file_chooser.set_files(photo_path)
+            logger.info("Photo selected through attachment button")
+            return
+        except Exception:
+            # Обычно скрепка открывает промежуточное меню — оно уже открыто.
+            pass
 
-        # Резервный путь: открыть меню вложений и выбрать фото/видео.
-        await upload_btn.click()
         menu_selectors = [
             '[role="menuitem"][aria-label*="Фото"]',
             '[role="menuitem"][aria-label*="фото"]',
             '[role="menuitem"][aria-label*="Photo"]',
+            '[role="menuitem"]:has-text("Фото")',
+            '[role="menuitem"]:has-text("Photo")',
+            '[role="dialog"] button:has-text("Фото")',
+            '[role="dialog"] [role="button"]:has-text("Фото")',
             '[role="dialog"] :text-is("Фото или видео")',
             '[role="dialog"] :text-is("Фото и видео")',
             '[role="dialog"] :text-is("Photo or video")',
@@ -317,16 +312,9 @@ class MaxClient:
             logger.warning(
                 f"File chooser after «Фото или видео» failed ({ex}), trying set_input_files"
             )
+            # После выбора пункта меню MAX создаёт/активирует нужный input.
+            file_input = await self._get_photo_input(composer)
             await file_input.set_input_files(photo_path)
-
-        if not await input_has_files():
-            logger.warning("input still empty; retrying set_input_files")
-            await file_input.set_input_files(photo_path)
-
-        if not await input_has_files():
-            raise RuntimeError(
-                "Photo did not attach: <input type=file> has no files after upload attempts"
-            )
 
     async def _wait_upload_ready(self, timeout_ms: int = 15000) -> None:
         composer = await self._get_composer()
@@ -569,9 +557,7 @@ class MaxClient:
                 continue
 
         if not preview_found:
-            logger.warning(
-                "No preview found after upload - но файл может быть загружен"
-            )
+            logger.warning("No preview found after photo upload")
             # Проверяем, появилась ли скрепка (файл прикреплен, но без превью)
             try:
                 await self.page.wait_for_selector(
@@ -581,7 +567,10 @@ class MaxClient:
                 preview_found = True
             except Exception as ex:
                 logger.warning(f"File attached (attachment button not found): {ex}")
-                pass
+        if not preview_found:
+            raise RuntimeError(
+                "Photo preview did not appear; refusing to send caption without photo"
+            )
 
         # await self.debug_screenshot("send_photo_2")
         # await self.debug_html("send_photo_2")
@@ -613,69 +602,34 @@ class MaxClient:
         # await self.debug_screenshot("send_photo_6")
         # await self.debug_html("send_photo_6")
 
-        if sent:
-            try:
-                # Ждём увеличения количества баблов
-                await self.page.wait_for_function(
-                    "(prev) => document.querySelectorAll('.bubble').length > prev",
-                    arg=before_bubbles,
-                    timeout=8000,
-                )
+        if not sent:
+            raise RuntimeError("Photo send button was not found or was disabled")
 
-                # await self.debug_screenshot("send_photo_7")
-                # await self.debug_html("send_photo_7")
+        # Ждём увеличения количества баблов
+        await self.page.wait_for_function(
+            "(prev) => document.querySelectorAll('.bubble').length > prev",
+            arg=before_bubbles,
+            timeout=8000,
+        )
 
-                # Проверяем, что превью исчезло
-                if preview_found:
-                    try:
-                        await self.page.wait_for_function(
-                            "() => document.querySelector('.attaches, .attach') === null",
-                            timeout=1000,
-                        )
-                        logger.info("Preview disappeared after send")
-                    except Exception as ex:
-                        logger.warning(f"Preview still present after send: {ex}")
-
-                # await self.debug_screenshot("send_photo_8")
-                # await self.debug_html("send_photo_8")
-
-                # Проверяем, что последнее сообщение - фото
-                last_info = await self.get_last_message_info()
-                has_images = bool(
-                    last_info
-                    and (last_info.get("type") == "images" or last_info.get("urls"))
-                )
-                if has_images:
-                    logger.info("Photo send confirmed: last message contains image(s)")
-                else:
-                    logger.warning("Last message does not contain image(s)")
-
-                # await self.debug_screenshot("send_photo_9")
-                # await self.debug_html("send_photo_9")
-
-                return
-
-            except Exception as ex:
-                logger.warning(f"Send button click did not increase bubble count: {ex}")
-
-        # await self.debug_screenshot("send_photo_10")
-        # await self.debug_html("send_photo_10")
-
-        # Fallback: пробуем Enter
         try:
-            await editor.click(force=True)
-            await self.page.keyboard.press("Enter")
             await self.page.wait_for_function(
-                "(prev) => document.querySelectorAll('.bubble').length > prev",
-                arg=before_bubbles,
-                timeout=8000,
+                "() => document.querySelector('.attaches, .attach') === null",
+                timeout=1000,
             )
-            logger.info("Photo send confirmed via Enter")
-            return
+            logger.info("Preview disappeared after send")
         except Exception as ex:
-            logger.warning(f"Enter fallback failed: {ex}")
+            logger.warning(f"Preview still present after send: {ex}")
 
-        # await self.debug_screenshot("send_photo_11")
-        # await self.debug_html("send_photo_11")
-
-        logger.error("Photo send failed: no method worked")
+        # Увеличение числа сообщений могло быть вызвано отправкой одной подписи.
+        # Подтверждаем, что последнее сообщение действительно содержит изображение.
+        last_info = await self.get_last_message_info()
+        has_images = bool(
+            last_info
+            and (last_info.get("type") == "images" or last_info.get("urls"))
+        )
+        if not has_images:
+            raise RuntimeError(
+                "Photo send produced a message without an image"
+            )
+        logger.info("Photo send confirmed: last message contains image(s)")
