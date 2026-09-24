@@ -5,12 +5,14 @@ from loguru import logger
 import time
 from max_message_extractors import extract_emojis, merge_caption_and_emojis
 from max_message_info import bubble_to_message_info
+from media_debug import MediaDebug
 
 
 class MaxClient:
     def __init__(self, page: Page, first_name: str = "") -> None:
         self.page: Page = page
         self.first_name = first_name
+        self.media_debug = MediaDebug()
 
     async def _bubble_to_message_info(self, bubble):
         return await bubble_to_message_info(bubble)
@@ -83,13 +85,14 @@ class MaxClient:
         if not bubbles:
             return []
         tail = bubbles[-max(1, int(limit)) :]
-        await self.debug_screenshot("messages_info_1")
-        await self.debug_html("messages_info_1")
+        parsed = []
         out: list[dict] = []
         for bubble in tail:
             info = await self._bubble_to_message_info(bubble)
+            parsed.append(info)
             if info:
                 out.append(info)
+        await self.media_debug.capture(self.page, tail, parsed)
         return out
 
     async def _get_editor(self):
