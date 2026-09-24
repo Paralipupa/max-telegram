@@ -40,7 +40,7 @@ class MediaDebug:
         self.last_attempt = None
         self.last_digest = None
 
-    async def capture(self, page, bubbles, parsed):
+    async def capture(self, page, bubbles, parsed, *, reason=None):
         if not self.enabled:
             return
         now = time.monotonic()
@@ -61,6 +61,11 @@ class MediaDebug:
             # content and media URLs instead, so identical polls do not fill disk.
             signature = [{'parsed': r['parsed'], 'text': r['dom']['text'],
                           'media': r['dom']['media']} for r in records]
+            # No bubbles can mean login, loading, or changed markup. Include the
+            # page HTML so a changed failure screen is captured on the next poll.
+            page_html = await page.content() if not records else None
+            signature = {'messages': signature, 'reason': reason,
+                         'page_url': page.url, 'empty_page_html': page_html}
             digest = hashlib.sha256(json.dumps(signature, ensure_ascii=False,
                                                 sort_keys=True).encode()).hexdigest()
             if digest == self.last_digest:
@@ -78,9 +83,11 @@ class MediaDebug:
                     (directory / (old + suffix)).unlink(missing_ok=True)
             base.with_suffix('.json').write_text(json.dumps({
                 'captured_at_utc': stamp, 'page_url': page.url,
-                'messages': records,
+                'reason': reason, 'messages': records,
             }, ensure_ascii=False, indent=2), encoding='utf-8')
-            base.with_suffix('.html').write_text(await page.content(), encoding='utf-8')
+            base.with_suffix('.html').write_text(
+                page_html if page_html is not None else await page.content(), encoding='utf-8'
+            )
             # Screenshot failure must not discard useful DOM diagnostics.
             try:
                 await page.screenshot(path=str(base.with_suffix('.png')), timeout=5000)

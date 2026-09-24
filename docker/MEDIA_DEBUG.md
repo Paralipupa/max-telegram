@@ -42,3 +42,12 @@ MAX_MEDIA_DEBUG_DIR=/data/media-debug
 
 Старые `tmp/debug_messages_info_1.html` и `.png` остаются на диске, но больше
 не перезаписываются каждым опросом. Методы ручного дампа в MaxClient сохранены.
+
+При таймауте ожидания `.bubble` снимок сохраняется даже без сообщений.
+В JSON будут `reason: "bubble_wait_failed:TimeoutError"`, текущий `page_url`
+и пустой список `messages`. HTML и PNG позволяют отличить экран входа,
+загрузку и изменение разметки MAX. Если элементы исчезли после ожидания,
+причина будет `no_bubbles`.
+
+Простой `restart` не обновляет Python-код, скопированный в образ через Dockerfile.
+После переноса изменённых файлов на сервер требуется `docker compose up -d --build bridge`.

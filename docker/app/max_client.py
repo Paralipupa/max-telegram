@@ -78,11 +78,16 @@ class MaxClient:
 
     async def get_recent_messages_info(self, limit: int = 25) -> list[dict]:
         """Возвращает последние `limit` сообщений (с конца), без None."""
-        await self.page.wait_for_selector(".bubble", state="attached", timeout=30000)
-        # await self.debug_screenshot("read_recent_messages_info_1")
-        # await self.debug_html("read_recent_messages_info_1")
+        try:
+            await self.page.wait_for_selector(".bubble", state="attached", timeout=30000)
+        except Exception as exc:
+            await self.media_debug.capture(
+                self.page, [], [], reason=f"bubble_wait_failed:{type(exc).__name__}"
+            )
+            raise
         bubbles = await self.page.query_selector_all(".bubble")
         if not bubbles:
+            await self.media_debug.capture(self.page, [], [], reason="no_bubbles")
             return []
         tail = bubbles[-max(1, int(limit)) :]
         parsed = []
