@@ -6,6 +6,7 @@ import time
 from max_message_extractors import extract_emojis, merge_caption_and_emojis
 from max_message_info import bubble_to_message_info
 from media_debug import MediaDebug
+from max_media_loading import load_lazy_photos
 
 
 class MaxClient:
@@ -15,6 +16,8 @@ class MaxClient:
         self.media_debug = MediaDebug()
 
     async def _bubble_to_message_info(self, bubble):
+        if not await load_lazy_photos(bubble):
+            return None
         return await bubble_to_message_info(bubble)
 
     async def open_chat(self, chat_id):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Optional
+from max_media_loading import photos_ready
 
 from max_message_extractors import (
     extract_attachment_items,
@@ -21,6 +22,9 @@ async def bubble_to_message_info(bubble) -> Optional[dict]:
     - attachments: files/video (not img): {'type': 'attachments', 'items': [...], 'caption': '...'}
     - mixed: photo(s) + file(s): {'type': 'mixed', 'image_urls', 'attachments', 'caption'}
     """
+    # Never turn a pending photo/partial album into a text-only message.
+    if not await photos_ready(bubble):
+        return None
     image_urls = await extract_image_urls(bubble)
     attachment_items = await extract_attachment_items(bubble)
     caption = await extract_text_caption(bubble)
