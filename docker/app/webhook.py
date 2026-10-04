@@ -41,6 +41,12 @@ def _register_webhook(app: FastAPI, pair: ChatPair) -> None:
     async def hook(request: Request) -> str:
         try:
             payload = await request.json()
+            message = payload.get("message") or {}
+            logger.info(
+                f"[{pair.name}] Telegram webhook: update_id={payload.get('update_id')}, "
+                f"chat_id={(message.get('chat') or {}).get('id')}, "
+                f"message_id={message.get('message_id')}"
+            )
             t = asyncio.create_task(process(payload, pair))
             t.add_done_callback(log_background_task)
             return "ok"

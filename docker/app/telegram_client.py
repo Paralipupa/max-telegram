@@ -29,8 +29,13 @@ def _post_telegram(pair: ChatPair, method: str, **kwargs):
 def send(pair: ChatPair, text: str) -> None:
     """Отправляет текстовое сообщение в Telegram."""
     logger.info(f"[{pair.name}] Отправляем текст: {text[:20]}...")
-    _post_telegram(pair, "sendMessage", json={"chat_id": pair.telegram_chat_id, "text": text})
-    logger.info(f"[{pair.name}] Текст отправлен")
+    sent = _post_telegram(pair, "sendMessage", json={"chat_id": pair.telegram_chat_id, "text": text})
+    sender = (sent.get("from") or {}) if isinstance(sent, dict) else {}
+    message_id = sent.get("message_id") if isinstance(sent, dict) else None
+    logger.info(
+        f"[{pair.name}] Текст отправлен: Telegram message_id={message_id}, "
+        f"bot={sender.get('username') or sender.get('id')}"
+    )
 
 
 def send_photo(pair: ChatPair, photo_url: str, caption: str | None = None) -> None:

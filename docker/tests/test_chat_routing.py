@@ -63,6 +63,13 @@ class TelegramRoutingTests(unittest.IsolatedAsyncioTestCase):
             await process({"message": {"chat": {"id": -456}, "text": "right"}}, PAIR)
             handle.assert_awaited_once()
 
+    async def test_messages_from_other_bots_are_not_forwarded_to_max(self):
+        with patch("processing._process_single_message", new_callable=AsyncMock) as handle:
+            await process({"message": {
+                "chat": {"id": -456}, "from": {"is_bot": True}, "text": "spam"
+            }}, PAIR)
+            handle.assert_not_awaited()
+
     async def test_telegram_api_rejection_is_not_reported_as_delivery(self):
         response = Mock(status_code=400)
         response.json.return_value = {"ok": False, "description": "chat not found"}
@@ -70,6 +77,17 @@ class TelegramRoutingTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaisesRegex(RuntimeError, "chat not found"):
                 send(PAIR, "test")
             self.assertEqual(post.call_args.kwargs["json"]["chat_id"], "-456")
+
+    async def test_successful_send_reports_telegram_message_id(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {
+            "ok": True, "result": {"message_id": 123, "from": {"username": "bridge_bot"}}
+        }
+        with patch("telegram_client.requests.post", return_value=response), \
+             patch("telegram_client.logger.info") as log:
+            send(PAIR, "test")
+            self.assertIn("message_id=123", log.call_args.args[0])
+            self.assertIn("bot=bridge_bot", log.call_args.args[0])
 
     async def test_unauthorized_token_does_not_retry_each_poll(self):
         response = Mock(status_code=401)

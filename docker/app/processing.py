@@ -22,11 +22,18 @@ def log_background_task(task: asyncio.Task) -> None:
 
 async def process(data: dict, pair: ChatPair) -> None:
     message = data.get("message") or {}
-    source_chat_id = message.get("chat", {}).get("id")
+    source_chat_id = (message.get("chat") or {}).get("id")
     if str(source_chat_id) != pair.telegram_chat_id:
         logger.warning(
             f"[{pair.name}] Пропущено сообщение Telegram из чата {source_chat_id}: "
             f"ожидался {pair.telegram_chat_id}"
+        )
+        return
+    sender = message.get("from") or {}
+    if sender.get("is_bot"):
+        logger.info(
+            f"[{pair.name}] Пропущено сообщение бота Telegram "
+            f"{sender.get('username') or sender.get('id')}"
         )
         return
     media_group_id = message.get("media_group_id")
@@ -149,6 +156,10 @@ async def _process_single_message(message: dict, pair: ChatPair) -> None:
         maxc = MaxClient(b["page"], first_name)
         await maxc.open_chat(pair.max_chat_id)
         await send_to_max(b, maxc, text=text, html_text=html_text, file_id=file_id, media_type=media_type, pair=pair)
+        logger.info(
+            f"[{pair.name}] Telegram → MAX: отправлено сообщение "
+            f"message_id={message.get('message_id')} из chat_id={pair.telegram_chat_id}"
+        )
 
 
 def _pick_photo_id(photos: list[dict], max_width: int | None = None) -> str | None:
