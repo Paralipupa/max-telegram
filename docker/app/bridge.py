@@ -7,6 +7,7 @@ from helpers import strip_trailing_time
 from browser import BrowserManager
 from max_client import MaxClient
 from telegram_client import (
+    TelegramUnauthorizedError,
     send,
     send_document,
     send_media_group,
@@ -112,6 +113,9 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
                 if not maxc.is_chat_url(maxc.page.url, pair.max_chat_id):
                     raise RuntimeError(f"[{pair.name}] MAX переключился на другой чат")
             seen_count = await _process_messages(store, msgs, seen_count, maxc, pair)
+        except TelegramUnauthorizedError as e:
+            logger.error(f"[{pair.name}] {e}. Останавливаем опрос этой пары до перезапуска")
+            return
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка: {e}")
         await asyncio.sleep(poll_interval)
@@ -325,6 +329,8 @@ async def _process_messages(
             message_text = msg.get("text") or msg.get("caption") or ""
             message_text = strip_trailing_time(message_text)
             await _send_to_telegram(msg, message_text, maxc, pair)
+        except TelegramUnauthorizedError:
+            raise
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка при отправке сообщения: {e}")
             continue

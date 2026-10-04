@@ -6,7 +6,8 @@ from bridge import _process_messages, _warmup_dedup_if_needed
 from constants import ChatPair
 from max_client import MaxClient
 from processing import process
-from telegram_client import send
+from telegram_client import TelegramUnauthorizedError, send
+from telegram_webhook import ensure_webhook, webhook_base_url
 
 
 PAIR = ChatPair("тест", "-123", "token", "-456")
@@ -70,6 +71,24 @@ class TelegramRoutingTests(unittest.IsolatedAsyncioTestCase):
                 send(PAIR, "test")
             self.assertEqual(post.call_args.kwargs["json"]["chat_id"], "-456")
 
+    async def test_unauthorized_token_does_not_retry_each_poll(self):
+        response = Mock(status_code=401)
+        response.json.return_value = {"ok": False, "description": "Unauthorized"}
+        with patch("telegram_client.requests.post", return_value=response):
+            with self.assertRaises(TelegramUnauthorizedError):
+                send(PAIR, "test")
+
+        store = Mock()
+        store.fingerprint.return_value = ("fingerprint", "message")
+        store.has.return_value = False
+        with patch("bridge._send_to_telegram", new_callable=AsyncMock) as deliver:
+            deliver.side_effect = TelegramUnauthorizedError("Unauthorized")
+            with self.assertRaises(TelegramUnauthorizedError):
+                await _process_messages(
+                    store, [{"type": "text", "text": "message"}], 0, Mock(), PAIR
+                )
+        store.add.assert_not_called()
+
     async def test_failed_delivery_remains_available_for_retry(self):
         store = Mock()
         store.fingerprint.return_value = ("fingerprint", "message")
@@ -92,6 +111,29 @@ class TelegramRoutingTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(
             await _warmup_dedup_if_needed(store, max_client, PAIR.name, PAIR.max_chat_id)
         )
+
+
+class WebhookSetupTests(unittest.TestCase):
+    def test_current_host_is_used_and_existing_webhook_is_preserved(self):
+        with patch.dict("os.environ", {"VIRTUAL_HOST": "bridge.example.org"}):
+            self.assertEqual(webhook_base_url(), "https://bridge.example.org")
+        expected = f"https://bridge.example.org{PAIR.webhook_path}"
+        with patch("telegram_webhook._post_telegram", return_value={"url": expected}) as post:
+            self.assertFalse(ensure_webhook(PAIR, "https://bridge.example.org"))
+            post.assert_called_once_with(PAIR, "getWebhookInfo")
+
+    def test_missing_webhook_is_registered_without_dropping_updates(self):
+        with patch("telegram_webhook._post_telegram", side_effect=[{"url": ""}, True]) as post:
+            self.assertTrue(ensure_webhook(PAIR, "https://bridge.example.org"))
+            self.assertEqual(post.call_args.kwargs["json"], {
+                "url": f"https://bridge.example.org{PAIR.webhook_path}"
+            })
+
+    def test_webhook_on_another_host_is_not_replaced(self):
+        with patch("telegram_webhook._post_telegram", return_value={"url": "https://other.example.org/bot"}) as post:
+            with self.assertRaisesRegex(RuntimeError, "другой хост"):
+                ensure_webhook(PAIR, "https://bridge.example.org")
+            post.assert_called_once()
 
 
 if __name__ == "__main__":

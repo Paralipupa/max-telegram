@@ -3,17 +3,27 @@ from constants import ChatPair, TELEGRAM_PREFIX
 from loguru import logger
 
 
-def _post_telegram(pair: ChatPair, method: str, **kwargs) -> None:
+class TelegramUnauthorizedError(RuntimeError):
+    """Telegram отклонил токен бота; до перезапуска конфигурация не изменится."""
+
+
+def _post_telegram(pair: ChatPair, method: str, **kwargs):
     try:
         response = requests.post(f"{pair.tg_api}/{method}", timeout=30, **kwargs)
         result = response.json()
     except (requests.RequestException, ValueError) as exc:
         raise RuntimeError(f"[{pair.name}] Telegram {method}: ошибка запроса ({type(exc).__name__})") from None
+    if response.status_code == 401:
+        raise TelegramUnauthorizedError(
+            f"[{pair.name}] Telegram отклонил токен бота (HTTP 401). "
+            "Проверьте TELEGRAM_BOT_TOKEN в .env и пересоздайте контейнер"
+        )
     if not isinstance(result, dict) or response.status_code != 200 or not result.get("ok"):
         description = result.get("description", "неизвестная ошибка") if isinstance(result, dict) else "некорректный ответ"
         raise RuntimeError(
             f"[{pair.name}] Telegram {method}: HTTP {response.status_code}, {description}"
         )
+    return result.get("result")
 
 
 def send(pair: ChatPair, text: str) -> None:
