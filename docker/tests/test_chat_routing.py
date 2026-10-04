@@ -7,7 +7,7 @@ from constants import ChatPair
 from max_client import MaxClient
 from processing import process
 from telegram_client import TelegramUnauthorizedError, send
-from telegram_webhook import ensure_webhook, webhook_base_url
+from telegram_webhook import check_bot_visibility, ensure_webhook, webhook_base_url
 
 
 PAIR = ChatPair("тест", "-123", "token", "-456")
@@ -144,7 +144,18 @@ class WebhookSetupTests(unittest.TestCase):
         with patch("telegram_webhook._post_telegram", side_effect=[{"url": ""}, True]) as post:
             self.assertTrue(ensure_webhook(PAIR, "https://bridge.example.org"))
             self.assertEqual(post.call_args.kwargs["json"], {
-                "url": f"https://bridge.example.org{PAIR.webhook_path}"
+                "url": f"https://bridge.example.org{PAIR.webhook_path}",
+                "allowed_updates": [],
+            })
+
+    def test_existing_webhook_with_messages_disabled_is_repaired(self):
+        expected = f"https://bridge.example.org{PAIR.webhook_path}"
+        info = {"url": expected, "allowed_updates": ["callback_query"]}
+        with patch("telegram_webhook._post_telegram", side_effect=[info, True]) as post:
+            self.assertTrue(ensure_webhook(PAIR, "https://bridge.example.org"))
+            self.assertEqual(post.call_args.kwargs["json"], {
+                "url": expected,
+                "allowed_updates": ["callback_query", "message"],
             })
 
     def test_webhook_on_another_host_is_not_replaced(self):
@@ -152,6 +163,28 @@ class WebhookSetupTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "другой хост"):
                 ensure_webhook(PAIR, "https://bridge.example.org")
             post.assert_called_once()
+
+    def test_privacy_mode_warning_for_non_admin_group_bot(self):
+        responses = [
+            {"id": 123, "username": "bridge_bot", "can_read_all_group_messages": False},
+            {"type": "supergroup"},
+            {"status": "member"},
+        ]
+        with patch("telegram_webhook._post_telegram", side_effect=responses), \
+                patch("telegram_webhook.logger.warning") as warning:
+            check_bot_visibility(PAIR)
+            self.assertIn("privacy mode", warning.call_args.args[0])
+
+    def test_admin_group_bot_does_not_trigger_privacy_warning(self):
+        responses = [
+            {"id": 123, "username": "bridge_bot", "can_read_all_group_messages": False},
+            {"type": "supergroup"},
+            {"status": "administrator"},
+        ]
+        with patch("telegram_webhook._post_telegram", side_effect=responses), \
+                patch("telegram_webhook.logger.warning") as warning:
+            check_bot_visibility(PAIR)
+            warning.assert_not_called()
 
 
 if __name__ == "__main__":

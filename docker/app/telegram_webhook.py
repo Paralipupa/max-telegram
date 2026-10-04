@@ -24,7 +24,24 @@ def ensure_webhook(pair: ChatPair, base_url: str) -> bool:
     expected = f"{base_url}{pair.webhook_path}"
     info = _post_telegram(pair, "getWebhookInfo")
     current = info.get("url", "")
+    pending = info.get("pending_update_count", 0)
+    last_error = (info.get("last_error_message") or "").replace(
+        pair.telegram_bot_token, "[скрыто]"
+    )
+    if pending or last_error:
+        logger.warning(
+            f"[{pair.name}] Telegram webhook: ожидают доставки {pending}, "
+            f"последняя ошибка: {last_error or 'нет'}"
+        )
+    allowed_updates = info.get("allowed_updates") or []
     if current == expected:
+        if allowed_updates and "message" not in allowed_updates:
+            _post_telegram(
+                pair, "setWebhook",
+                json={"url": expected, "allowed_updates": [*allowed_updates, "message"]},
+            )
+            logger.info(f"[{pair.name}] Webhook Telegram: включена доставка сообщений")
+            return True
         logger.info(f"[{pair.name}] Webhook Telegram уже настроен")
         return False
     if current and urlsplit(current).hostname != urlsplit(base_url).hostname:
@@ -32,9 +49,40 @@ def ensure_webhook(pair: ChatPair, base_url: str) -> bool:
             f"[{pair.name}] Webhook Telegram указывает на другой хост; "
             "автоматическая замена пропущена"
         )
-    _post_telegram(pair, "setWebhook", json={"url": expected})
+    # Telegram сохраняет allowed_updates от прежней настройки, если их не указать.
+    updates = [*allowed_updates, "message"] if allowed_updates else []
+    _post_telegram(pair, "setWebhook", json={"url": expected, "allowed_updates": updates})
     logger.info(f"[{pair.name}] Webhook Telegram настроен")
     return True
+
+
+def check_bot_visibility(pair: ChatPair) -> None:
+    bot = _post_telegram(pair, "getMe")
+    chat = _post_telegram(pair, "getChat", json={"chat_id": pair.telegram_chat_id})
+    if chat.get("type") not in ("group", "supergroup"):
+        return
+    if bot.get("can_read_all_group_messages"):
+        logger.info(f"[{pair.name}] Бот Telegram может читать сообщения группы")
+        return
+    member = _post_telegram(
+        pair,
+        "getChatMember",
+        json={"chat_id": pair.telegram_chat_id, "user_id": bot["id"]},
+    )
+    if member.get("status") not in ("administrator", "creator"):
+        logger.warning(
+            f"[{pair.name}] Бот @{bot.get('username', '?')} не видит обычные сообщения "
+            "группы: отключите privacy mode через @BotFather /setprivacy "
+            "и добавьте бота в группу заново либо назначьте его администратором"
+        )
+
+
+def configure_pair(pair: ChatPair, base_url: str) -> None:
+    ensure_webhook(pair, base_url)
+    try:
+        check_bot_visibility(pair)
+    except Exception as exc:
+        logger.warning(f"[{pair.name}] Не удалось проверить privacy mode бота: {exc}")
 
 
 def main() -> None:

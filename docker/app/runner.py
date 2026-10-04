@@ -6,6 +6,7 @@ from webhook import create_app
 from browser import BrowserManager
 from loguru import logger
 from constants import load_pairs, DEDUP_RESET
+from telegram_webhook import configure_pair, webhook_base_url
 
 AUTH_SAVE_INTERVAL = int(os.environ.get("AUTH_SAVE_INTERVAL", 3600))  # секунды
 
@@ -19,6 +20,27 @@ async def periodic_auth_save():
             await BrowserManager.save_auth_state()
         except Exception as e:
             logger.error(f"Не удалось сохранить auth.json: {e}")
+
+
+async def configure_telegram_webhooks(pairs, server):
+    try:
+        base_url = webhook_base_url()
+    except ValueError as exc:
+        logger.error(f"Не удалось проверить Telegram webhook: {exc}")
+        return
+    # Сервер должен начать принимать запросы до регистрации адреса в Telegram.
+    for _ in range(100):
+        if server.started:
+            break
+        await asyncio.sleep(0.1)
+    else:
+        logger.error("Не удалось проверить Telegram webhook: HTTP-сервер не запустился")
+        return
+    for pair in pairs:
+        try:
+            await asyncio.to_thread(configure_pair, pair, base_url)
+        except Exception as exc:
+            logger.error(f"[{pair.name}] Не удалось проверить Telegram webhook: {exc}")
 
 
 async def main():
@@ -60,6 +82,7 @@ async def main():
         *[run_bridge(pair, len(pairs)) for pair in pairs],
         server.serve(),
         periodic_auth_save(),
+        configure_telegram_webhooks(pairs, server),
     )
 
 
