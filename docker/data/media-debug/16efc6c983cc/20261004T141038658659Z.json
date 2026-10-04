@@ -1,0 +1,41 @@
+{
+  "captured_at_utc": "20261004T141038658659Z",
+  "page_url": "https://web.max.ru/-72609697391229",
+  "reason": null,
+  "messages": [
+    {
+      "parsed": {
+        "type": "text",
+        "text": "Alex (⦿)  \nhhhh 02:10 PM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": true,
+          "name": null
+        }
+      },
+      "observations": [],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <!----> <!----> <span class=\"text svelte-1htnb3l\" data-message-double-click-ignore=\"\"><!----><!----><!----><!----><!----><!---->Alex (⦿)  \nhhhh<!----></span><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--text svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 02:10 PM <!----><!----></span><!----> <div class=\"indicators svelte-13lobfv\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" style=\"\"><use href=\"#icon_status_delivered\"></use></svg><!----></div><!----></div><!----></span><!----></div> <!----></div>",
+        "text": "Alex (⦿)  \nhhhh\n02:10 PM",
+        "media": []
+      }
+    },
+    {
+      "parsed": {
+        "type": "text",
+        "text": "kkkk 02:10 PM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": true,
+          "name": null
+        }
+      },
+      "observations": [],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <!----> <!----> <span class=\"text svelte-1htnb3l\" data-message-double-click-ignore=\"\"><!----><!----><!----><!----><!----><!---->kkkk<!----></span><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--text svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 02:10 PM <!----><!----></span><!----> <div class=\"indicators svelte-13lobfv\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" style=\"\"><use href=\"#icon_status_delivered\"></use></svg><!----></div><!----></div><!----></span><!----></div> <!----></div>",
+        "text": "kkkk\n02:10 PM",
+        "media": []
+      }
+    }
+  ]
+}
