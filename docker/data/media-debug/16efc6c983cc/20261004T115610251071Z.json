@@ -1,0 +1,41 @@
+{
+  "captured_at_utc": "20261004T115610251071Z",
+  "page_url": "https://web.max.ru/-72609697391229",
+  "reason": null,
+  "messages": [
+    {
+      "parsed": {
+        "type": "text",
+        "text": "sss 11:53 AM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": true,
+          "name": null
+        }
+      },
+      "observations": [],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <!----> <!----> <span class=\"text svelte-1htnb3l\" data-message-double-click-ignore=\"\"><!----><!----><!----><!----><!----><!---->sss<!----></span><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--text svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 11:53 AM <!----><!----></span><!----> <div class=\"indicators svelte-13lobfv\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" style=\"\"><use href=\"#icon_status_delivered\"></use></svg><!----></div><!----></div><!----></span><!----></div> <!----></div>",
+        "text": "sss\n11:53 AM",
+        "media": []
+      }
+    },
+    {
+      "parsed": {
+        "type": "text",
+        "text": "отправляем ррррр 11:55 AM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": true,
+          "name": null
+        }
+      },
+      "observations": [],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <!----> <!----> <span class=\"text svelte-1htnb3l\" data-message-double-click-ignore=\"\"><!----><!----><!----><!----><!----><!---->отправляем ррррр<!----></span><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--text svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 11:55 AM <!----><!----></span><!----> <div class=\"indicators svelte-13lobfv\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" style=\"\"><use href=\"#icon_status_delivered\"></use></svg><!----></div><!----></div><!----></span><!----></div> <!----></div>",
+        "text": "отправляем ррррр\n11:55 AM",
+        "media": []
+      }
+    }
+  ]
+}
