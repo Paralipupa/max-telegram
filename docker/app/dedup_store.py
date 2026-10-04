@@ -4,7 +4,7 @@ import os
 import sqlite3
 import time
 from typing import Any, Iterable
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from loguru import logger
 from helpers import strip_trailing_time
 
@@ -59,7 +59,9 @@ class DedupStore:
                 + (message.get("caption") or "")
                 + (message.get("sender", {}).get("name") or "")
             )
-            if not text:
+            # Подпись у нескольких фото может совпадать (часто это только время).
+            # Медиа определяем по вложениям, а не по подписи.
+            if message.get("type") in ("image", "images", "attachments", "mixed") or not text:
                 payload = json.dumps(
                     normalized,
                     ensure_ascii=False,
@@ -73,23 +75,27 @@ class DedupStore:
 
     @staticmethod
     def _strip_query(url: str) -> str:
-        """Убирает query-параметры из URL (временные токены не должны влиять на хеш)."""
+        """Убирает временные параметры, сохраняя идентификатор медиа MAX."""
         try:
             p = urlparse(url)
-            return urlunparse(p._replace(query="", fragment=""))
+            if (p.hostname == "i.oneme.ru" or p.path in ("", "/")) and p.query:
+                stable = [
+                    (key, value)
+                    for key, value in parse_qsl(p.query, keep_blank_values=True)
+                    if key.lower()
+                    not in {"expires", "expire", "expiry", "exp", "signature", "sig", "token"}
+                ]
+                # При отсутствии известного идентификатора лучше повторная отправка,
+                # чем потеря разных файлов из-за одинакового пути "/".
+                query = urlencode(sorted(stable)) if stable else p.query
+            else:
+                query = ""
+            return urlunparse(p._replace(query=query, fragment=""))
         except Exception:
             return url
 
     @staticmethod
     def _normalize_message(message: dict[str, Any]) -> dict[str, Any]:
-        # Сообщение с фото в Максе рендерится постепенно: сначала только текст (type=text),
-        # затем текст+фото (type=images/mixed). Если есть caption — используем его как
-        # единственный ключ, иначе при смене типа получим разные хеши и дублирование.
-        caption = (message.get("text") or message.get("caption") or "").strip()
-        caption = strip_trailing_time(caption)
-        if caption:
-            return {"caption": caption}
-
         strip = DedupStore._strip_query
         t = message.get("type")
         if t in ("image", "images"):
@@ -133,6 +139,10 @@ class DedupStore:
                 "image_urls": sorted(imgs),
                 "attachments": norm_att,
             }
+        caption = (message.get("text") or message.get("caption") or "").strip()
+        caption = strip_trailing_time(caption)
+        if caption:
+            return {"caption": caption}
         return {"type": str(t or "unknown"), "raw": message}
 
     def has(self, fingerprint: str) -> bool:
