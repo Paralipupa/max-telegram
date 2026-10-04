@@ -22,6 +22,13 @@ def log_background_task(task: asyncio.Task) -> None:
 
 async def process(data: dict, pair: ChatPair) -> None:
     message = data.get("message") or {}
+    source_chat_id = message.get("chat", {}).get("id")
+    if str(source_chat_id) != pair.telegram_chat_id:
+        logger.warning(
+            f"[{pair.name}] Пропущено сообщение Telegram из чата {source_chat_id}: "
+            f"ожидался {pair.telegram_chat_id}"
+        )
+        return
     media_group_id = message.get("media_group_id")
 
     if media_group_id:

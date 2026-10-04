@@ -1,6 +1,8 @@
 import asyncio
+from urllib.parse import urlsplit
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError, async_playwright
 from constants import HEADLESS
+from max_client import MaxClient
 from loguru import logger
 
 class BrowserManager:
@@ -12,7 +14,6 @@ class BrowserManager:
     _pw = None
     _browser = None
     _context = None
-    _navigation_timeout = 60_000
     _navigation_attempts = 3
     # pair_name → {"page": Page, "lock": asyncio.Lock}
     _pages: dict[str, dict] = {}
@@ -20,18 +21,15 @@ class BrowserManager:
     @classmethod
     async def _goto(cls, page, pair_name: str, url: str) -> None:
         """Открывает страницу MAX с повторами при временном сетевом таймауте."""
+        chat_id = urlsplit(url).path.strip("/")
         for attempt in range(1, cls._navigation_attempts + 1):
             try:
-                await page.goto(
-                    url,
-                    wait_until="domcontentloaded",
-                    timeout=cls._navigation_timeout,
-                )
+                await MaxClient(page).open_chat(chat_id)
                 return
             except PlaywrightTimeoutError:
                 if attempt == cls._navigation_attempts:
                     logger.error(
-                        f"[{pair_name}] MAX не загрузился после "
+                        f"[{pair_name}] Чат MAX не загрузился после "
                         f"{cls._navigation_attempts} попыток: {url}"
                     )
                     raise
@@ -91,9 +89,6 @@ class BrowserManager:
         if not entry:
             return
         await cls._goto(entry["page"], pair_name, entry["url"])
-        await entry["page"].wait_for_selector(
-            ".bubble", state="attached", timeout=30000
-        )
 
     @classmethod
     async def save_auth_state(cls, path: str = "/data/auth.json") -> None:

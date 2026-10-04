@@ -3,6 +3,7 @@ from constants import TELEGRAM_PREFIX
 from playwright.async_api import Page
 from loguru import logger
 import time
+from urllib.parse import urlsplit
 from max_message_extractors import extract_emojis, merge_caption_and_emojis
 from max_message_info import bubble_to_message_info
 from media_debug import MediaDebug
@@ -14,28 +15,51 @@ class MaxClient:
         self.page: Page = page
         self.first_name = first_name
         self.media_debug = MediaDebug()
+        self._empty_chat_ready = False
 
     async def _bubble_to_message_info(self, bubble):
         if not await load_lazy_photos(bubble):
             return None
         return await bubble_to_message_info(bubble)
 
+    @staticmethod
+    def is_chat_url(url: str, chat_id: str) -> bool:
+        parsed = urlsplit(url)
+        return parsed.hostname == "web.max.ru" and parsed.path.rstrip("/") == f"/{chat_id}"
+
+    async def ensure_chat(self, chat_id: str) -> None:
+        await self.open_chat(chat_id)
+
     async def open_chat(self, chat_id):
         url = f"https://web.max.ru/{chat_id}"
+        editor_selector = '[contenteditable][role="textbox"]'
+        if self.is_chat_url(self.page.url, chat_id):
+            editor = self.page.locator(editor_selector).last
+            if await editor.is_visible():
+                return
         for attempt in range(3):
             try:
-                await self.page.goto(url)
+                await self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                self._empty_chat_ready = False
                 current_url = self.page.url
-                if (
-                    "/login" in current_url
-                    or "/auth" in current_url
-                    or "web.max.ru" not in current_url
-                ):
+                if "/login" in current_url or "/auth" in current_url:
                     raise RuntimeError(
                         f"Сессия Max истекла (редирект на {current_url}). "
                         "Обновите auth.json: запустите local-auth/get_auth.py"
                     )
-                await self.page.wait_for_selector("[contenteditable]", timeout=15000)
+                try:
+                    await self.page.wait_for_selector(editor_selector, state="visible", timeout=30000)
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"Чат MAX {chat_id} не открылся: адрес страницы {self.page.url}. "
+                        "Проверьте MAX_CHAT_ID в .env и доступ аккаунта к чату"
+                    ) from exc
+                current_url = self.page.url
+                if not self.is_chat_url(current_url, chat_id):
+                    raise RuntimeError(
+                        f"Вместо чата MAX {chat_id} открылась страница {current_url}. "
+                        "Проверьте MAX_CHAT_ID в .env и доступ аккаунта к чату"
+                    )
                 return
             except RuntimeError:
                 raise
@@ -81,13 +105,24 @@ class MaxClient:
 
     async def get_recent_messages_info(self, limit: int = 25) -> list[dict]:
         """Возвращает последние `limit` сообщений (с конца), без None."""
-        try:
-            await self.page.wait_for_selector(".bubble", state="attached", timeout=30000)
-        except Exception as exc:
-            await self.media_debug.capture(
-                self.page, [], [], reason=f"bubble_wait_failed:{type(exc).__name__}"
-            )
-            raise
+        if getattr(self, "_empty_chat_ready", False):
+            if not await self.page.query_selector_all(".bubble"):
+                return []
+        else:
+            try:
+                await self.page.wait_for_selector(".bubble", state="attached", timeout=30000)
+            except Exception as exc:
+                path = self.page.url.removeprefix("https://web.max.ru/").strip("/")
+                if path.lstrip("-").isdigit():
+                    editor = self.page.locator('[contenteditable][role="textbox"]').last
+                    if await editor.is_visible():
+                        self._empty_chat_ready = True
+                        return []
+                await self.media_debug.capture(
+                    self.page, [], [], reason=f"bubble_wait_failed:{type(exc).__name__}"
+                )
+                raise
+        self._empty_chat_ready = False
         bubbles = await self.page.query_selector_all(".bubble")
         if not bubbles:
             await self.media_debug.capture(self.page, [], [], reason="no_bubbles")

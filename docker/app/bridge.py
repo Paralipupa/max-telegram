@@ -25,15 +25,17 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
     maxc = MaxClient(b["page"])
 
     store = DedupStore(pair.dedup_path)
-    seen_count = 0
-    while seen_count == 0:
-        await _warmup_dedup_if_needed(store, maxc, pair.name)
-        seen_count = store.count()
-        if seen_count == 0:
-            logger.warning(
-                f"[{pair.name}] Дедупликация пока пустая; повторяем прогрев через 10 секунд"
-            )
-            await asyncio.sleep(10)
+    while True:
+        async with b["lock"]:
+            await maxc.ensure_chat(pair.max_chat_id)
+            warmed = await _warmup_dedup_if_needed(store, maxc, pair.name, pair.max_chat_id)
+        if warmed:
+            break
+        logger.warning(
+            f"[{pair.name}] Дедупликация пока пустая; повторяем прогрев через 10 секунд"
+        )
+        await asyncio.sleep(10)
+    seen_count = store.count()
     last_count_refresh = time.monotonic()
 
     logger.info(
@@ -103,9 +105,12 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
                                 f"[{pair.name}] Bridge завершён: авторизация недействительна"
                             ) from warmup_err
             async with b["lock"]:
+                await maxc.ensure_chat(pair.max_chat_id)
                 msgs = await maxc.get_recent_messages_info(
                     limit=_dynamic_tail_limit(seen_count)
                 )
+                if not maxc.is_chat_url(maxc.page.url, pair.max_chat_id):
+                    raise RuntimeError(f"[{pair.name}] MAX переключился на другой чат")
             seen_count = await _process_messages(store, msgs, seen_count, maxc, pair)
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка: {e}")
@@ -229,7 +234,9 @@ def _refresh_seen_count_if_needed(
 
 
 def _dynamic_tail_limit(seen_count: int, tail_limit: int = TAIL_LIMIT) -> int:
-    return min(tail_limit, max(1, seen_count))
+    # Повторно проверяем весь хвост: неотправленное сообщение не должно исчезнуть
+    # из выборки после появления следующего сообщения.
+    return tail_limit
 
 
 async def _midnight_dedup_reset_loop(
@@ -280,19 +287,23 @@ async def _reset_dedup_to_recent_fingerprints(
 
 
 async def _warmup_dedup_if_needed(
-    store: DedupStore, maxc: MaxClient, pair_name: str
-) -> None:
+    store: DedupStore, maxc: MaxClient, pair_name: str, chat_id: str
+) -> bool:
     if store.count() != 0:
-        return
+        return True
     try:
         count = TAIL_LIMIT*3
         warm = await maxc.get_recent_messages_info(limit=count)
+        if not maxc.is_chat_url(maxc.page.url, chat_id):
+            raise RuntimeError("MAX покинул открытый чат во время прогрева")
         for msg in warm:
             fp, text = store.fingerprint(msg)
             logger.info(f"--> {text[:30]}")
             store.add(fp)
+        return True
     except Exception as e:
         logger.error(f"[{pair_name}] Ошибка прогрева дедупа: {e}")
+        return False
 
 
 async def _process_messages(
@@ -316,7 +327,7 @@ async def _process_messages(
             await _send_to_telegram(msg, message_text, maxc, pair)
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка при отправке сообщения: {e}")
-        finally:
-            store.add(fp)
-            seen_count += 1
+            continue
+        store.add(fp)
+        seen_count += 1
     return seen_count
