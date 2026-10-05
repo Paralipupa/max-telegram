@@ -1,0 +1,127 @@
+{
+  "captured_at_utc": "20261005T070449091155Z",
+  "page_url": "https://web.max.ru/-68376487157908",
+  "reason": null,
+  "messages": [
+    {
+      "parsed": {
+        "type": "images",
+        "urls": [
+          "https://i.oneme.ru/i?r=BUE2sh_eZW7g8kugOdIm2NotA88qgLYi64TzqIhEbvawDPjyR8W9T2dmKiVl6Y29OXi-lVzsyQysV3DaVqjHCp2E&expires=1791274545414"
+        ],
+        "caption": "04:22 AM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": false,
+          "name": "Дмитрий Хушеев"
+        }
+      },
+      "observations": [],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----><div class=\"link svelte-1htnb3l\"><div class=\"mark svelte-ytvivd\"><span class=\"label svelte-ytvivd\">Переслано:</span><!----> <!----><!----><!----><button class=\"author svelte-ytvivd\" aria-label=\"Открыть профиль\" data-author-color=\"3\"><!----><!----><div class=\"avatarComposition svelte-1njcjnw\"><!----><!----><!----><!----><div class=\"avatar svelte-1gp4c0a\" style=\"--avatarSize: 16px;\"><!----><div class=\"image-placeholder svelte-1aizpza\" style=\"width: 16px; height: 16px; display: inline-block; position: relative;\"><!----><img decoding=\"async\" class=\"img avatarImage svelte-1aizpza\" loading=\"lazy\" src=\"https://i.oneme.ru/i?r=BUGhUou04b028GIQiF8sPj1ExgqsJZMZOs0oRtSCws6NnBCdoetEyfavZvr3lqiZj8pTN8v-XqnXtzFi8f9fG-Wj&amp;fn=sqr_32\" alt=\"\" style=\"width: 16px; height: 16px; background: none center center / cover; object-fit: cover;\"><!----> <!----><!----></div><!----></div><!----></div><!----> <span class=\"text svelte-ytvivd\" data-message-double-click-ignore=\"\"><span class=\"name svelte-1riu5uh\"><span class=\"text svelte-1riu5uh\">Дмитрий Хушеев<!----></span> <!----></span><!----></span></button><!----></div><!----></div><!----> <!----> <div class=\"media svelte-1htnb3l\"><div class=\"grid svelte-1czsaa1\" aria-label=\"Прикрепленные фото\" style=\"width: 753.363px; height: 227.646px; max-width: min(753.363px, 100%);\"><button class=\"tile svelte-1czsaa1\" style=\"width: 100%; height: 100%; left: 0%; top: 0%; border-width: 0px;\"><!----><!----><!----><!----><div class=\"image-placeholder svelte-1aizpza\" style=\"width: 100%; height: 100%; display: inline-block; position: relative;\"><!----><img decoding=\"async\" class=\"img image svelte-1aizpza\" loading=\"lazy\" src=\"https://i.oneme.ru/i?r=BUE2sh_eZW7g8kugOdIm2NotA88qgLYi64TzqIhEbvawDPjyR8W9T2dmKiVl6Y29OXi-lVzsyQysV3DaVqjHCp2E&amp;expires=1791274545414\" alt=\"\" style=\"width: 100%; height: 100%; background: none center center / cover; object-fit: cover;\"><!----> <!----><!----></div><!----></button></div><!----></div><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta meta--bubbled svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--bubbled-inside svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 04:22 AM <!----><!----></span><!----> <!----></div><!----></span><!----></div> <!----></div>",
+        "text": "Переслано:\nДмитрий Хушеев\n04:22 AM",
+        "media": [
+          {
+            "tag": "IMG",
+            "class": "img avatarImage svelte-1aizpza",
+            "src": "https://i.oneme.ru/i?r=BUGhUou04b028GIQiF8sPj1ExgqsJZMZOs0oRtSCws6NnBCdoetEyfavZvr3lqiZj8pTN8v-XqnXtzFi8f9fG-Wj&fn=sqr_32",
+            "currentSrc": "https://i.oneme.ru/i?r=BUGhUou04b028GIQiF8sPj1ExgqsJZMZOs0oRtSCws6NnBCdoetEyfavZvr3lqiZj8pTN8v-XqnXtzFi8f9fG-Wj&fn=sqr_32",
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": "width: 16px; height: 16px; background: none center center / cover; object-fit: cover;",
+            "complete": true,
+            "naturalWidth": 32,
+            "readyState": null,
+            "parents": [
+              "DIV.image-placeholder.svelte-1aizpza",
+              "DIV.avatar.svelte-1gp4c0a",
+              "DIV.avatarComposition.svelte-1njcjnw",
+              "BUTTON.author.svelte-ytvivd",
+              "DIV.mark.svelte-ytvivd",
+              "DIV.link.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "DIV",
+            "class": "media svelte-1htnb3l",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "IMG",
+            "class": "img image svelte-1aizpza",
+            "src": "https://i.oneme.ru/i?r=BUE2sh_eZW7g8kugOdIm2NotA88qgLYi64TzqIhEbvawDPjyR8W9T2dmKiVl6Y29OXi-lVzsyQysV3DaVqjHCp2E&expires=1791274545414",
+            "currentSrc": "https://i.oneme.ru/i?r=BUE2sh_eZW7g8kugOdIm2NotA88qgLYi64TzqIhEbvawDPjyR8W9T2dmKiVl6Y29OXi-lVzsyQysV3DaVqjHCp2E&expires=1791274545414",
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": "width: 100%; height: 100%; background: none center center / cover; object-fit: cover;",
+            "complete": true,
+            "naturalWidth": 1920,
+            "readyState": null,
+            "parents": [
+              "DIV.image-placeholder.svelte-1aizpza",
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parsed": {
+        "type": "text",
+        "text": "Опера округа 04:29 AM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": false,
+          "name": null
+        }
+      },
+      "observations": [
+        "text_with_media_candidates"
+      ],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <!----> <!----> <span class=\"text svelte-1htnb3l\" data-message-double-click-ignore=\"\"><!----><!----><!----><!----><!----><!---->Опера округа<!----></span><!----> <!----> <!----> <!----> <!----> <!----> <!----> <div class=\"reactions reactions--inside svelte-1htnb3l\"><div class=\"reactions reactions--inside svelte-xkv7l2\"><button class=\"reaction svelte-1ug033e\"><div class=\"animoji svelte-63rwl\" style=\"width: 20px; height: 20px;\"><!----><div style=\"width: 20px; height: 20px; display: flex;\"><!----><!----><canvas width=\"20\" height=\"20\" style=\"width: 20px; height: 20px;\"></canvas><!----></div><!----> <!----><!----></div><!----> <span class=\"counter svelte-1ug033e\">1</span></button></div><!----></div><!----> <span class=\"meta svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--text svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 04:29 AM <!----><!----></span><!----> <!----></div><!----></span><!----></div> <!----></div>",
+        "text": "Опера округа\n1\n04:29 AM",
+        "media": [
+          {
+            "tag": "CANVAS",
+            "class": "",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": "width: 20px; height: 20px;",
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "DIV.",
+              "DIV.animoji.svelte-63rwl",
+              "BUTTON.reaction.svelte-1ug033e",
+              "DIV.reactions.reactions--inside.svelte-xkv7l2",
+              "DIV.reactions.reactions--inside.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
