@@ -1,0 +1,253 @@
+{
+  "captured_at_utc": "20261006T010652748530Z",
+  "page_url": "https://web.max.ru/-68376487157908",
+  "reason": null,
+  "messages": [
+    {
+      "parsed": {
+        "type": "attachments",
+        "items": [
+          {
+            "url": "https://maxvd660.okcdn.ru/?expires=1791335200210&srcIp=13.143.187.142&pr=95&srcAg=CHROME&ms=130.49.231.11&type=2&sig=5pttUK9oeJQ&ct=0&urls=130.49.226.47&clientType=51&id=19974353521275&scl=1",
+            "kind": "video",
+            "name": ""
+          }
+        ],
+        "caption": "Серёга Хангуев 12:55 AM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": false,
+          "name": "Серёга Хангуев"
+        }
+      },
+      "observations": [],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><div class=\"header svelte-1htnb3l\"><button class=\"header svelte-1wamq0n\" data-author-color=\"2\"><span class=\"name svelte-1wamq0n\"><span class=\"name svelte-1riu5uh\"><span class=\"text svelte-1riu5uh\">Серёга Хангуев<!----></span> <!----></span><!----></span> <span class=\"role svelte-1wamq0n\"><!----><!---->owner <!----></span><!----></button><!----></div><!----> <!----><div class=\"link svelte-1htnb3l\"><div class=\"mark svelte-ytvivd\"><span class=\"label svelte-ytvivd\">Переслано:</span><!----> <!----><!----><!----><button class=\"author svelte-ytvivd\" aria-label=\"Открыть профиль\" data-author-color=\"4\"><!----><!----><div class=\"avatarComposition svelte-1njcjnw\"><!----><!----><!----><!----><div class=\"avatar svelte-1gp4c0a\" style=\"--avatarSize: 16px;\"><!----><div class=\"image-placeholder svelte-1aizpza\" style=\"width: 16px; height: 16px; display: inline-block; position: relative;\"><!----><img decoding=\"async\" class=\"img avatarImage svelte-1aizpza\" loading=\"lazy\" src=\"https://i.oneme.ru/i?r=BUGhUou04b028GIQiF8sPj1EXZBL5jsb1CXxl6ir6YlCPv-YX3S9eBp3Ll5WuGCwP3VTN8v-XqnXtzFi8f9fG-Wj&amp;fn=sqr_32\" alt=\"\" style=\"width: 16px; height: 16px; background: none center center / cover; object-fit: cover;\"><!----> <!----><!----></div><!----></div><!----></div><!----> <span class=\"text svelte-ytvivd\" data-message-double-click-ignore=\"\"><span class=\"name svelte-1riu5uh\"><span class=\"text svelte-1riu5uh\">Дмитрий<!----></span> <!----></span><!----></span></button><!----></div><!----></div><!----> <!----> <div class=\"media svelte-1htnb3l\"><div class=\"grid svelte-1czsaa1\" aria-label=\"Прикрепленные фото\" style=\"width: 200px; height: 350px; max-width: min(200px, 100%);\"><button class=\"tile svelte-1czsaa1\" style=\"width: 100%; height: 100%; left: 0%; top: 0%; border-width: 0px;\"><!----><!----><!----><div class=\"video video--interactive svelte-ti8mxv\" style=\"width: 100%; height: 100%;\"><video loop=\"\" class=\"player svelte-ti8mxv player--cover\" poster=\"https://iv.okcdn.ru/getImage?disableStub=true&amp;type=PREPARE&amp;url=https%3A%2F%2Fiv.okcdn.ru%2FvideoPreview%3Fid%3D19974353521275%26type%3D39%26idx%3D1%26scl%3D3%26tkn%3D3CEexNhFYP4KED-6kEaw8KK-k94&amp;signatureToken=YlFxTSIRe7mcSqO-2DZ3KA\" style=\"width: 100%; height: 100%;\"><source type=\"video/mp4\" src=\"https://maxvd660.okcdn.ru/?expires=1791335200210&amp;srcIp=13.143.187.142&amp;pr=95&amp;srcAg=CHROME&amp;ms=130.49.231.11&amp;type=2&amp;sig=5pttUK9oeJQ&amp;ct=0&amp;urls=130.49.226.47&amp;clientType=51&amp;id=19974353521275&amp;scl=1\"><!----> Ваш браузер не поддерживает видео</video> <div class=\"actions svelte-ti8mxv\"><button class=\"actionButton svelte-ti8mxv\" aria-label=\"Развернуть на весь экран\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" style=\"\"><use href=\"#icon_expand\"></use></svg><!----></button><!----> <button class=\"actionButton svelte-ti8mxv\" aria-label=\"Включить звук\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" style=\"\"><use href=\"#icon_sound_crossed\"></use></svg><!----></button></div><!----> <button class=\"actionButton playButton svelte-ti8mxv\" aria-label=\"Поставить на паузу\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" style=\"\"><use href=\"#icon_pause_fill\"></use></svg><!----></button><!----> <div class=\"duration svelte-ti8mxv\">00:00</div><!----> <!----></div><!----></button></div><!----></div><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta meta--bubbled svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--bubbled-inside svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 12:55 AM <!----><!----></span><!----> <!----></div><!----></span><!----></div> <!----></div>",
+        "text": "Серёга Хангуев\nowner\nПереслано:\nДмитрий\n00:00\n12:55 AM",
+        "media": [
+          {
+            "tag": "IMG",
+            "class": "img avatarImage svelte-1aizpza",
+            "src": "https://i.oneme.ru/i?r=BUGhUou04b028GIQiF8sPj1EXZBL5jsb1CXxl6ir6YlCPv-YX3S9eBp3Ll5WuGCwP3VTN8v-XqnXtzFi8f9fG-Wj&fn=sqr_32",
+            "currentSrc": "https://i.oneme.ru/i?r=BUGhUou04b028GIQiF8sPj1EXZBL5jsb1CXxl6ir6YlCPv-YX3S9eBp3Ll5WuGCwP3VTN8v-XqnXtzFi8f9fG-Wj&fn=sqr_32",
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": "width: 16px; height: 16px; background: none center center / cover; object-fit: cover;",
+            "complete": true,
+            "naturalWidth": 32,
+            "readyState": null,
+            "parents": [
+              "DIV.image-placeholder.svelte-1aizpza",
+              "DIV.avatar.svelte-1gp4c0a",
+              "DIV.avatarComposition.svelte-1njcjnw",
+              "BUTTON.author.svelte-ytvivd",
+              "DIV.mark.svelte-ytvivd",
+              "DIV.link.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "DIV",
+            "class": "media svelte-1htnb3l",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "DIV",
+            "class": "video video--interactive svelte-ti8mxv",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": "width: 100%; height: 100%;",
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "VIDEO",
+            "class": "player svelte-ti8mxv player--cover",
+            "src": null,
+            "currentSrc": "https://maxvd660.okcdn.ru/?expires=1791335200210&srcIp=13.143.187.142&pr=95&srcAg=CHROME&ms=130.49.231.11&type=2&sig=5pttUK9oeJQ&ct=0&urls=130.49.226.47&clientType=51&id=19974353521275&scl=1",
+            "srcset": null,
+            "poster": "https://iv.okcdn.ru/getImage?disableStub=true&type=PREPARE&url=https%3A%2F%2Fiv.okcdn.ru%2FvideoPreview%3Fid%3D19974353521275%26type%3D39%26idx%3D1%26scl%3D3%26tkn%3D3CEexNhFYP4KED-6kEaw8KK-k94&signatureToken=YlFxTSIRe7mcSqO-2DZ3KA",
+            "href": null,
+            "style": "width: 100%; height: 100%;",
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": 4,
+            "parents": [
+              "DIV.video.video--interactive.svelte-ti8mxv",
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "SOURCE",
+            "class": "",
+            "src": "https://maxvd660.okcdn.ru/?expires=1791335200210&srcIp=13.143.187.142&pr=95&srcAg=CHROME&ms=130.49.231.11&type=2&sig=5pttUK9oeJQ&ct=0&urls=130.49.226.47&clientType=51&id=19974353521275&scl=1",
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "VIDEO.player.svelte-ti8mxv.player--cover",
+              "DIV.video.video--interactive.svelte-ti8mxv",
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parsed": {
+        "type": "attachments",
+        "items": [
+          {
+            "url": "https://maxvd433.okcdn.ru/?expires=1791335200223&srcIp=13.143.187.142&pr=95&srcAg=CHROME&ms=130.49.231.53&type=1&sig=yZO9ANfp6N8&ct=0&urls=130.49.230.81&clientType=51&id=18192079915599&scl=1",
+            "kind": "video",
+            "name": ""
+          }
+        ],
+        "caption": "12:56 AM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": false,
+          "name": "Юрий"
+        }
+      },
+      "observations": [],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----><div class=\"link svelte-1htnb3l\"><div class=\"mark svelte-ytvivd\"><span class=\"label svelte-ytvivd\">Переслано:</span><!----> <!----><!----><!----><button class=\"author svelte-ytvivd\" aria-label=\"Открыть профиль\" data-author-color=\"3\"><!----><!----><div class=\"avatarComposition svelte-1njcjnw\"><!----><!----><!----><!----><div class=\"avatar svelte-1gp4c0a\" style=\"--avatarSize: 16px;\"><!----><div class=\"image-placeholder svelte-1aizpza\" style=\"width: 16px; height: 16px; display: inline-block; position: relative;\"><!----><img decoding=\"async\" class=\"img avatarImage svelte-1aizpza\" loading=\"lazy\" src=\"https://i.oneme.ru/i?r=BTE2sh_eZW7g8kugOdIm2NotX6aHGN_-uJI_EY4Wei407PlzNd89cXNFjb0X9v_Ze8w&amp;fn=sqr_32\" alt=\"\" style=\"width: 16px; height: 16px; background: none center center / cover; object-fit: cover;\"><!----> <!----><!----></div><!----></div><!----></div><!----> <span class=\"text svelte-ytvivd\" data-message-double-click-ignore=\"\"><span class=\"name svelte-1riu5uh\"><span class=\"text svelte-1riu5uh\">Юрий<!----></span> <!----></span><!----></span></button><!----></div><!----></div><!----> <!----> <div class=\"media svelte-1htnb3l\"><div class=\"grid svelte-1czsaa1\" aria-label=\"Прикрепленные фото\" style=\"width: 608.611px; height: 281.789px; max-width: min(608.611px, 100%);\"><button class=\"tile svelte-1czsaa1\" style=\"width: 100%; height: 100%; left: 0%; top: 0%; border-width: 0px;\"><!----><!----><!----><div class=\"video video--interactive svelte-ti8mxv\" style=\"width: 100%; height: 100%;\"><video loop=\"\" class=\"player svelte-ti8mxv player--cover\" poster=\"https://iv.okcdn.ru/getImage?disableStub=true&amp;type=PREPARE&amp;url=https%3A%2F%2Fiv.okcdn.ru%2FvideoPreview%3Fid%3D18192079915599%26type%3D39%26idx%3D0%26scl%3D3%26tkn%3DVMBJNy9ysEByLfRDrbBQ5B_0s9U&amp;signatureToken=fnRlopYXGdlPcvXwciNSFA\" style=\"width: 100%; height: 100%;\"><source type=\"video/mp4\" src=\"https://maxvd433.okcdn.ru/?expires=1791335200223&amp;srcIp=13.143.187.142&amp;pr=95&amp;srcAg=CHROME&amp;ms=130.49.231.53&amp;type=1&amp;sig=yZO9ANfp6N8&amp;ct=0&amp;urls=130.49.230.81&amp;clientType=51&amp;id=18192079915599&amp;scl=1\"><!----> Ваш браузер не поддерживает видео</video> <div class=\"actions svelte-ti8mxv\"><button class=\"actionButton svelte-ti8mxv\" aria-label=\"Развернуть на весь экран\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" style=\"\"><use href=\"#icon_expand\"></use></svg><!----></button><!----> <button class=\"actionButton svelte-ti8mxv\" aria-label=\"Включить звук\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" style=\"\"><use href=\"#icon_sound_crossed\"></use></svg><!----></button></div><!----> <button class=\"actionButton playButton svelte-ti8mxv\" aria-label=\"Поставить на паузу\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" style=\"\"><use href=\"#icon_pause_fill\"></use></svg><!----></button><!----> <div class=\"duration svelte-ti8mxv\">03:51</div><!----> <!----></div><!----></button></div><!----></div><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta meta--bubbled svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--bubbled-inside svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 12:56 AM <!----><!----></span><!----> <!----></div><!----></span><!----></div> <!----></div>",
+        "text": "Переслано:\nЮрий\n03:51\n12:56 AM",
+        "media": [
+          {
+            "tag": "IMG",
+            "class": "img avatarImage svelte-1aizpza",
+            "src": "https://i.oneme.ru/i?r=BTE2sh_eZW7g8kugOdIm2NotX6aHGN_-uJI_EY4Wei407PlzNd89cXNFjb0X9v_Ze8w&fn=sqr_32",
+            "currentSrc": "https://i.oneme.ru/i?r=BTE2sh_eZW7g8kugOdIm2NotX6aHGN_-uJI_EY4Wei407PlzNd89cXNFjb0X9v_Ze8w&fn=sqr_32",
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": "width: 16px; height: 16px; background: none center center / cover; object-fit: cover;",
+            "complete": true,
+            "naturalWidth": 32,
+            "readyState": null,
+            "parents": [
+              "DIV.image-placeholder.svelte-1aizpza",
+              "DIV.avatar.svelte-1gp4c0a",
+              "DIV.avatarComposition.svelte-1njcjnw",
+              "BUTTON.author.svelte-ytvivd",
+              "DIV.mark.svelte-ytvivd",
+              "DIV.link.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "DIV",
+            "class": "media svelte-1htnb3l",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "DIV",
+            "class": "video video--interactive svelte-ti8mxv",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": "width: 100%; height: 100%;",
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "VIDEO",
+            "class": "player svelte-ti8mxv player--cover",
+            "src": null,
+            "currentSrc": "https://maxvd433.okcdn.ru/?expires=1791335200223&srcIp=13.143.187.142&pr=95&srcAg=CHROME&ms=130.49.231.53&type=1&sig=yZO9ANfp6N8&ct=0&urls=130.49.230.81&clientType=51&id=18192079915599&scl=1",
+            "srcset": null,
+            "poster": "https://iv.okcdn.ru/getImage?disableStub=true&type=PREPARE&url=https%3A%2F%2Fiv.okcdn.ru%2FvideoPreview%3Fid%3D18192079915599%26type%3D39%26idx%3D0%26scl%3D3%26tkn%3DVMBJNy9ysEByLfRDrbBQ5B_0s9U&signatureToken=fnRlopYXGdlPcvXwciNSFA",
+            "href": null,
+            "style": "width: 100%; height: 100%;",
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": 4,
+            "parents": [
+              "DIV.video.video--interactive.svelte-ti8mxv",
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "SOURCE",
+            "class": "",
+            "src": "https://maxvd433.okcdn.ru/?expires=1791335200223&srcIp=13.143.187.142&pr=95&srcAg=CHROME&ms=130.49.231.53&type=1&sig=yZO9ANfp6N8&ct=0&urls=130.49.230.81&clientType=51&id=18192079915599&scl=1",
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "VIDEO.player.svelte-ti8mxv.player--cover",
+              "DIV.video.video--interactive.svelte-ti8mxv",
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

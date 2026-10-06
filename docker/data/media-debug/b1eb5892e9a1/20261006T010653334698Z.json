@@ -1,0 +1,165 @@
+{
+  "captured_at_utc": "20261006T010653334698Z",
+  "page_url": "https://web.max.ru/-72326392713796",
+  "reason": null,
+  "messages": [
+    {
+      "parsed": {
+        "type": "images",
+        "urls": [
+          "https://i.oneme.ru/i?r=BUE2sh_eZW7g8kugOdIm2Notbd_X1cg_gtNA0LdvWItqXK7ZBcK2OlTkdFBqNsfOrxe-lVzsyQysV3DaVqjHCp2E&expires=1791348525519"
+        ],
+        "caption": "01:05 PM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": true,
+          "name": null
+        }
+      },
+      "observations": [],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <div class=\"media svelte-1htnb3l\"><div class=\"grid svelte-1czsaa1\" aria-label=\"Прикрепленные фото\" style=\"width: 466.667px; height: 350px; max-width: min(466.667px, 100%);\"><button class=\"tile svelte-1czsaa1\" style=\"width: 100%; height: 100%; left: 0%; top: 0%; border-width: 0px;\"><!----><!----><!----><!----><div class=\"image-placeholder svelte-1aizpza\" style=\"width: 100%; height: 100%; display: inline-block; position: relative;\"><!----><img decoding=\"async\" class=\"img image svelte-1aizpza\" loading=\"lazy\" src=\"https://i.oneme.ru/i?r=BUE2sh_eZW7g8kugOdIm2Notbd_X1cg_gtNA0LdvWItqXK7ZBcK2OlTkdFBqNsfOrxe-lVzsyQysV3DaVqjHCp2E&amp;expires=1791348525519\" alt=\"\" style=\"width: 100%; height: 100%; background: none center center / cover; object-fit: cover;\"><!----> <!----><!----></div><!----></button></div><!----></div><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta meta--bubbled svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--bubbled-inside svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 01:05 PM <!----><!----></span><!----> <div class=\"indicators svelte-13lobfv\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" style=\"\"><use href=\"#icon_status_read\"></use></svg><!----></div><!----></div><!----></span><!----></div> <!----></div>",
+        "text": "01:05 PM",
+        "media": [
+          {
+            "tag": "DIV",
+            "class": "media svelte-1htnb3l",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "IMG",
+            "class": "img image svelte-1aizpza",
+            "src": "https://i.oneme.ru/i?r=BUE2sh_eZW7g8kugOdIm2Notbd_X1cg_gtNA0LdvWItqXK7ZBcK2OlTkdFBqNsfOrxe-lVzsyQysV3DaVqjHCp2E&expires=1791348525519",
+            "currentSrc": "https://i.oneme.ru/i?r=BUE2sh_eZW7g8kugOdIm2Notbd_X1cg_gtNA0LdvWItqXK7ZBcK2OlTkdFBqNsfOrxe-lVzsyQysV3DaVqjHCp2E&expires=1791348525519",
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": "width: 100%; height: 100%; background: none center center / cover; object-fit: cover;",
+            "complete": true,
+            "naturalWidth": 1920,
+            "readyState": null,
+            "parents": [
+              "DIV.image-placeholder.svelte-1aizpza",
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parsed": {
+        "type": "attachments",
+        "items": [
+          {
+            "url": "https://maxvd669.okcdn.ru/?expires=1791335204010&srcIp=13.143.187.142&pr=95&srcAg=CHROME&ms=130.49.231.20&type=3&sig=Wccfek_bJGQ&ct=0&urls=130.49.232.58&clientType=51&id=19511689939656&scl=1",
+            "kind": "video",
+            "name": ""
+          }
+        ],
+        "caption": "03:49 PM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": true,
+          "name": null
+        }
+      },
+      "observations": [],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <div class=\"media svelte-1htnb3l\"><div class=\"grid svelte-1czsaa1\" aria-label=\"Прикрепленные фото\" style=\"width: 200px; height: 350px; max-width: min(200px, 100%);\"><button class=\"tile svelte-1czsaa1\" style=\"width: 100%; height: 100%; left: 0%; top: 0%; border-width: 0px;\"><!----><!----><!----><div class=\"video video--interactive svelte-ti8mxv\" style=\"width: 100%; height: 100%;\"><video loop=\"\" class=\"player svelte-ti8mxv player--cover\" poster=\"https://iv.okcdn.ru/getImage?disableStub=true&amp;type=PREPARE&amp;url=https%3A%2F%2Fiv.okcdn.ru%2FvideoPreview%3Fid%3D19511689939656%26type%3D39%26idx%3D0%26scl%3D3%26tkn%3DNuE2BmtVdj7T280yqQSCgCEnQnM&amp;signatureToken=gZaRrPE5hhz9Uy3a3ckExw\" style=\"width: 100%; height: 100%;\"><source type=\"video/mp4\" src=\"https://maxvd669.okcdn.ru/?expires=1791335204010&amp;srcIp=13.143.187.142&amp;pr=95&amp;srcAg=CHROME&amp;ms=130.49.231.20&amp;type=3&amp;sig=Wccfek_bJGQ&amp;ct=0&amp;urls=130.49.232.58&amp;clientType=51&amp;id=19511689939656&amp;scl=1\"><!----> Ваш браузер не поддерживает видео</video> <div class=\"actions svelte-ti8mxv\"><button class=\"actionButton svelte-ti8mxv\" aria-label=\"Развернуть на весь экран\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" style=\"\"><use href=\"#icon_expand\"></use></svg><!----></button><!----> <button class=\"actionButton svelte-ti8mxv\" aria-label=\"Включить звук\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" style=\"\"><use href=\"#icon_sound_crossed\"></use></svg><!----></button></div><!----> <button class=\"actionButton playButton svelte-ti8mxv\" aria-label=\"Поставить на паузу\"><svg aria-hidden=\"true\" width=\"24\" height=\"24\" style=\"\"><use href=\"#icon_pause_fill\"></use></svg><!----></button><!----> <div class=\"duration svelte-ti8mxv\">00:10</div><!----> <!----></div><!----></button></div><!----></div><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta meta--bubbled svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--bubbled-inside svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 03:49 PM <!----><!----></span><!----> <div class=\"indicators svelte-13lobfv\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" style=\"\"><use href=\"#icon_status_read\"></use></svg><!----></div><!----></div><!----></span><!----></div> <!----></div>",
+        "text": "00:10\n03:49 PM",
+        "media": [
+          {
+            "tag": "DIV",
+            "class": "media svelte-1htnb3l",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "DIV",
+            "class": "video video--interactive svelte-ti8mxv",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": "width: 100%; height: 100%;",
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "VIDEO",
+            "class": "player svelte-ti8mxv player--cover",
+            "src": null,
+            "currentSrc": "https://maxvd669.okcdn.ru/?expires=1791335204010&srcIp=13.143.187.142&pr=95&srcAg=CHROME&ms=130.49.231.20&type=3&sig=Wccfek_bJGQ&ct=0&urls=130.49.232.58&clientType=51&id=19511689939656&scl=1",
+            "srcset": null,
+            "poster": "https://iv.okcdn.ru/getImage?disableStub=true&type=PREPARE&url=https%3A%2F%2Fiv.okcdn.ru%2FvideoPreview%3Fid%3D19511689939656%26type%3D39%26idx%3D0%26scl%3D3%26tkn%3DNuE2BmtVdj7T280yqQSCgCEnQnM&signatureToken=gZaRrPE5hhz9Uy3a3ckExw",
+            "href": null,
+            "style": "width: 100%; height: 100%;",
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": 4,
+            "parents": [
+              "DIV.video.video--interactive.svelte-ti8mxv",
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          },
+          {
+            "tag": "SOURCE",
+            "class": "",
+            "src": "https://maxvd669.okcdn.ru/?expires=1791335204010&srcIp=13.143.187.142&pr=95&srcAg=CHROME&ms=130.49.231.20&type=3&sig=Wccfek_bJGQ&ct=0&urls=130.49.232.58&clientType=51&id=19511689939656&scl=1",
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "VIDEO.player.svelte-ti8mxv.player--cover",
+              "DIV.video.video--interactive.svelte-ti8mxv",
+              "BUTTON.tile.svelte-1czsaa1",
+              "DIV.grid.svelte-1czsaa1",
+              "DIV.media.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
