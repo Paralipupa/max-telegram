@@ -2,7 +2,13 @@ import asyncio
 import datetime
 import os
 import time
-from constants import MAX_PREFIX, TELEGRAM_PREFIX, TAIL_LIMIT, ChatPair
+from constants import (
+    MAX_MESSAGE_AGE_MINUTES,
+    MAX_PREFIX,
+    TELEGRAM_PREFIX,
+    TAIL_LIMIT,
+    ChatPair,
+)
 from helpers import strip_trailing_time
 from browser import BrowserManager
 from max_client import MaxClient
@@ -322,6 +328,21 @@ async def _process_messages(
         if TELEGRAM_PREFIX in text:
             continue
         if store.has(fp):   
+            continue
+
+        timestamp = msg.get("timestamp")
+        max_age_seconds = MAX_MESSAGE_AGE_MINUTES * 60
+        if (
+            MAX_MESSAGE_AGE_MINUTES > 0
+            and isinstance(timestamp, (int, float))
+            and time.time() - timestamp > max_age_seconds
+        ):
+            logger.info(
+                f"[{pair.name}] Пропускаем сообщение MAX старше "
+                f"{MAX_MESSAGE_AGE_MINUTES} минут: {text[:60]}"
+            )
+            store.add(fp)
+            seen_count += 1
             continue
 
         try:

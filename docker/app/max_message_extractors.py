@@ -117,6 +117,47 @@ async def extract_sender(bubble) -> dict:
     )
 
 
+async def extract_message_timestamp(bubble) -> Optional[float]:
+    """Returns the MAX message time as a Unix timestamp, when the DOM exposes it."""
+    value = await bubble.evaluate(
+        """(el) => {
+          const meta = el.querySelector('span.meta .meta--text > .text');
+          const timeText = (meta?.innerText || '').trim();
+          const match = timeText.match(/(\\d{1,2}):(\\d{2})(?:\\s*([ap]m))?/i);
+          if (!match) return null;
+
+          // MAX inserts a date capsule before messages from each day.
+          let dateText = '';
+          for (const separator of document.querySelectorAll('.capsuleSeparator')) {
+            if (separator.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) {
+              dateText = (separator.innerText || '').trim();
+            }
+          }
+
+          const now = new Date();
+          let day = dateText ? new Date(dateText) : new Date(now);
+          if (dateText && Number.isNaN(day.getTime())) {
+            const normalized = dateText.toLowerCase();
+            if (/^(today|сегодня)$/.test(normalized)) day = new Date(now);
+            else if (/^(yesterday|вчера)$/.test(normalized)) {
+              day = new Date(now);
+              day.setDate(day.getDate() - 1);
+            } else return null;
+          }
+
+          let hours = Number(match[1]);
+          const minutes = Number(match[2]);
+          if (match[3]) {
+            const pm = match[3].toLowerCase() === 'pm';
+            hours = (hours % 12) + (pm ? 12 : 0);
+          }
+          day.setHours(hours, minutes, 0, 0);
+          return day.getTime() / 1000;
+        }"""
+    )
+    return float(value) if isinstance(value, (int, float)) else None
+
+
 async def extract_reply_quote(bubble) -> Optional[dict]:
     """Извлекает блок цитаты из reply-сообщения MAX.
 
@@ -212,4 +253,3 @@ def merge_caption_and_emojis(caption: Optional[str], emojis: list[str]) -> Optio
     if caption:
         return f"{caption} {emoji_text}".strip()
     return emoji_text
-
