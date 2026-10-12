@@ -202,7 +202,11 @@ async def extract_text_caption(bubble) -> Optional[str]:
         'xpath=.//span[contains(@class, "text")'
         ' and not(ancestor::div[contains(@class, "link")])'
         ' and not(ancestor::button[contains(@class, "mark")])'
-        ' and not(ancestor::*[contains(@class, "meta")])]'
+        ' and not(ancestor::*[contains(@class, "meta")])'
+        ' and not(ancestor::*[contains(@class, "media")])'
+        ' and not(ancestor::*[contains(@class, "attach")])'
+        ' and not(ancestor::*[contains(@class, "file")])'
+        ' and not(ancestor::*[contains(@class, "document")])]'
     )
     parts: list[str] = []
     for text_span in text_spans:
@@ -219,7 +223,9 @@ async def extract_text_caption(bubble) -> Optional[str]:
           const clone = el.cloneNode(true);
           // Удаляем reply-блок (div.link > button.mark)
           clone.querySelectorAll('div[class*="link"]').forEach((n) => n.remove());
-          clone.querySelectorAll("div.media").forEach((n) => n.remove());
+          clone.querySelectorAll(
+            'div.media, [class*="attach"], [class*="file"], [class*="document"]'
+          ).forEach((n) => n.remove());
           clone.querySelectorAll("span.emoji").forEach((n) => n.remove());
           // Удаляем meta (время)
           clone.querySelectorAll('[class*="meta"]').forEach((n) => n.remove());
