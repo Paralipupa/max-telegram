@@ -1,12 +1,12 @@
 {
-  "captured_at_utc": "20261012T072232488802Z",
+  "captured_at_utc": "20261012T073203623396Z",
   "page_url": "https://web.max.ru/-72326392713796",
   "reason": null,
   "messages": [
     {
       "parsed": {
         "type": "text",
-        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1772091373353378277?adults=4&check_in=2026-10-15&check_out=2026-10-17&source_impression_id=p3_1791712682_P30Q6p0-Tg-Tz6d4&guests=1 07:06 AM",
+        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1772091373353378277?adults=4&check_in=2026-10-15&check_out=2026-10-17&source_impression_id=p3_1791712682_P30Q6p0-Tg-Tz6d4&guests=1",
         "reply_quote": null,
         "sender": {
           "is_outgoing": true,
@@ -44,7 +44,7 @@
     {
       "parsed": {
         "type": "text",
-        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1776011011718773496?source_impression_id=p3_1791716526_P3PPS6emArYvqUw-&check_in=2026-10-15&guests=4&adults=4&check_out=2026-10-17 07:06 AM",
+        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1776011011718773496?source_impression_id=p3_1791716526_P3PPS6emArYvqUw-&check_in=2026-10-15&guests=4&adults=4&check_out=2026-10-17",
         "reply_quote": null,
         "sender": {
           "is_outgoing": true,

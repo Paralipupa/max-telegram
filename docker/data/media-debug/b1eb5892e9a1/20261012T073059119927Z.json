@@ -1,12 +1,12 @@
 {
-  "captured_at_utc": "20261012T072127997160Z",
+  "captured_at_utc": "20261012T073059119927Z",
   "page_url": "https://web.max.ru/-72326392713796",
   "reason": null,
   "messages": [
     {
       "parsed": {
         "type": "text",
-        "text": "03:23 PM",
+        "text": "PDF 14194492_1110202613531362301forward_aerovaucher.pdf Скачать • 262.66 KB",
         "reply_quote": null,
         "sender": {
           "is_outgoing": true,
@@ -43,7 +43,7 @@
     {
       "parsed": {
         "type": "text",
-        "text": "03:23 PM",
+        "text": "PDF 14194492_1110202613531362302forward_aerovaucher.pdf Скачать • 262.57 KB",
         "reply_quote": null,
         "sender": {
           "is_outgoing": true,
@@ -80,7 +80,7 @@
     {
       "parsed": {
         "type": "text",
-        "text": "03:24 PM",
+        "text": "PDF 14194492_1110202613531362303forward_aerovaucher.pdf Скачать • 262.64 KB",
         "reply_quote": null,
         "sender": {
           "is_outgoing": true,
@@ -117,7 +117,7 @@
     {
       "parsed": {
         "type": "text",
-        "text": "Пассажиры рейса из Москвы в Анталью вторые сутки не могут улететь из Внуково\n\nВылет Turkish Airlines несколько раз переносили, туристов разместили в гостинице. Когда самолёт отправится в Турцию, пока неизвестно.\n\nМосква 2026 — подписаться 06:45 PM 😯",
+        "text": "Пассажиры рейса из Москвы в Анталью вторые сутки не могут улететь из Внуково\n\nВылет Turkish Airlines несколько раз переносили, туристов разместили в гостинице. Когда самолёт отправится в Турцию, пока неизвестно.\n\nМосква 2026 — подписаться 😯",
         "reply_quote": null,
         "sender": {
           "is_outgoing": true,
@@ -196,7 +196,7 @@
     {
       "parsed": {
         "type": "text",
-        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1772091373353378277?adults=4&check_in=2026-10-15&check_out=2026-10-17&source_impression_id=p3_1791712682_P30Q6p0-Tg-Tz6d4&guests=1 07:06 AM",
+        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1772091373353378277?adults=4&check_in=2026-10-15&check_out=2026-10-17&source_impression_id=p3_1791712682_P30Q6p0-Tg-Tz6d4&guests=1",
         "reply_quote": null,
         "sender": {
           "is_outgoing": true,
@@ -234,7 +234,7 @@
     {
       "parsed": {
         "type": "text",
-        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1776011011718773496?source_impression_id=p3_1791716526_P3PPS6emArYvqUw-&check_in=2026-10-15&guests=4&adults=4&check_out=2026-10-17 07:06 AM",
+        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1776011011718773496?source_impression_id=p3_1791716526_P3PPS6emArYvqUw-&check_in=2026-10-15&guests=4&adults=4&check_out=2026-10-17",
         "reply_quote": null,
         "sender": {
           "is_outgoing": true,
