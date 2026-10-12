@@ -1,0 +1,62 @@
+{
+  "captured_at_utc": "20261012T072230277318Z",
+  "page_url": "https://web.max.ru/-72609697391229",
+  "reason": null,
+  "messages": [
+    {
+      "parsed": {
+        "type": "text",
+        "text": "07:21 AM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": true,
+          "name": null
+        },
+        "timestamp": 1791789660.0
+      },
+      "observations": [
+        "text_with_media_candidates"
+      ],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <div data-message-double-click-ignore=\"\" class=\"attaches svelte-1htnb3l\"><!----> <button class=\"container svelte-1cw64r4\" aria-label=\"Скачать\"><!----><div class=\"fileIcon svelte-1cw64r4\"><div class=\"wrapper svelte-1ye18ui\" aria-hidden=\"true\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\" class=\"svelte-1ye18ui\"><path fill=\"var(--file-type-background)\" d=\"M4.45 13.474C4.45 2.389 6.825.014 17.91.014c2.796 0 5.228-.166 6.805.667 3.345 1.765 9.18 5.468 10.491 8.913a5.55 5.55 0 0 1 .302 1.527c.03.737.042 1.52.042 2.353V26.54C35.55 37.624 33.175 40 22.09 40h-4.18C6.825 40 4.45 37.624 4.45 26.54V13.474Z\"></path><path d=\"M4.45 13.474C4.45 2.389 6.825.014 17.91.014c2.796 0 5.228-.166 6.805.667 3.345 1.765 9.18 5.468 10.491 8.913a5.55 5.55 0 0 1 .302 1.527c.03.737.042 1.52.042 2.353V26.54C35.55 37.624 33.175 40 22.09 40h-4.18C6.825 40 4.45 37.624 4.45 26.54V13.474Z\" fill=\"var(--file-type-presentation-bkg)\"></path><path d=\"M23.594.262c.41.098.785.228 1.121.405 3.345 1.765 9.18 5.469 10.492 8.914.08.24.144.479.194.713l-.003-.01c-4.875 1.947-7.332 1.047-8.04-2.335-.382-1.826-1.19-6.96-3.764-7.687ZM23.332.203Z\" fill=\"var(--file-type-presentation-element)\"></path><path d=\"M2 26.4c0-2.24 0-3.36.436-4.216a4 4 0 0 1 1.748-1.748C5.04 20 6.16 20 8.4 20h23.2c2.24 0 3.36 0 4.216.436a4 4 0 0 1 1.748 1.748C38 23.04 38 24.16 38 26.4v2.2c0 2.24 0 3.36-.436 4.216a4 4 0 0 1-1.748 1.748C34.96 35 33.84 35 31.6 35H8.4c-2.24 0-3.36 0-4.216-.436a4 4 0 0 1-1.748-1.748C2 31.96 2 30.84 2 28.6v-2.2Z\" fill=\"var(--file-type-presentation-badge)\"></path><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M15.003 10.177a.75.75 0 0 0 0 1.061l4.475 4.475a.75.75 0 0 0 1.06 0l4.475-4.475a.75.75 0 0 0-1.06-1.06l-3.195 3.194V6.817a.75.75 0 0 0-1.5 0v6.555l-3.194-3.195a.75.75 0 0 0-1.061 0Z\" fill=\"var(--file-type-presentation-badge)\"></path><!----><text x=\"50%\" y=\"70%\" dominant-baseline=\"middle\" text-anchor=\"middle\" class=\"svelte-1ye18ui\">PDF</text><!----></svg> <!----></div><!----></div><!----> <div class=\"title svelte-1cw64r4\">tmpjyfylknm.pdf</div> <div class=\"info svelte-1cw64r4 info--interactive\">Скачать • 118.90 KB<!----></div><!----></button><!----> <!----> <!----> <!----></div><!----> <!----> <!----> <!----> <span class=\"meta svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--text svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 07:21 AM <!----><!----></span><!----> <div class=\"indicators svelte-13lobfv\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" style=\"\"><use href=\"#icon_status_delivered\"></use></svg><!----></div><!----></div><!----></span><!----></div> <!----></div>",
+        "text": "PDF\ntmpjyfylknm.pdf\nСкачать • 118.90 KB\n07:21 AM",
+        "media": [
+          {
+            "tag": "DIV",
+            "class": "attaches svelte-1htnb3l",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": null,
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parsed": {
+        "type": "text",
+        "text": "Alex (⦿) 07:21 AM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": true,
+          "name": null
+        },
+        "timestamp": 1791789660.0
+      },
+      "observations": [],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <!----> <!----> <span class=\"text svelte-1htnb3l\" data-message-double-click-ignore=\"\"><!----><!----><!----><!----><!----><!---->Alex (⦿)<!----></span><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--text svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 07:21 AM <!----><!----></span><!----> <div class=\"indicators svelte-13lobfv\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" style=\"\"><use href=\"#icon_status_delivered\"></use></svg><!----></div><!----></div><!----></span><!----></div> <!----></div>",
+        "text": "Alex (⦿)\n07:21 AM",
+        "media": []
+      }
+    }
+  ]
+}
