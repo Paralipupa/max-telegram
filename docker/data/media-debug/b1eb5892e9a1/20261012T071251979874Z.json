@@ -1,0 +1,83 @@
+{
+  "captured_at_utc": "20261012T071251979874Z",
+  "page_url": "https://web.max.ru/-72326392713796",
+  "reason": null,
+  "messages": [
+    {
+      "parsed": {
+        "type": "text",
+        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1772091373353378277?adults=4&check_in=2026-10-15&check_out=2026-10-17&source_impression_id=p3_1791712682_P30Q6p0-Tg-Tz6d4&guests=1 07:06 AM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": true,
+          "name": null
+        },
+        "timestamp": 1791788760.0
+      },
+      "observations": [
+        "text_with_media_candidates"
+      ],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <!----> <!----> <span class=\"text svelte-1htnb3l\" data-message-double-click-ignore=\"\"><!----><!----><!----><!----><!----><!---->Ch (⦿)  \n<!----><!----><!----><!----><!----><!----><!----><!----><!----><a class=\"link svelte-q2ybpg\" href=\"https://www.airbnb.com/rooms/1772091373353378277?adults=4&amp;check_in=2026-10-15&amp;check_out=2026-10-17&amp;source_impression_id=p3_1791712682_P30Q6p0-Tg-Tz6d4&amp;guests=1\" aria-haspopup=\"dialog\" aria-controls=\"\" aria-expanded=\"false\"><!----><!----><!----><!----><!----><!---->https://www.airbnb.com/rooms/1772091373353378277?adults=4&amp;check_in=2026-10-15&amp;check_out=2026-10-17&amp;source_impression_id=p3_1791712682_P30Q6p0-Tg-Tz6d4&amp;guests=1<!----></a><!----></span><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--text svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 07:06 AM <!----><!----></span><!----> <div class=\"indicators svelte-13lobfv\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" style=\"\"><use href=\"#icon_status_read\"></use></svg><!----></div><!----></div><!----></span><!----></div> <!----></div>",
+        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1772091373353378277?adults=4&check_in=2026-10-15&check_out=2026-10-17&source_impression_id=p3_1791712682_P30Q6p0-Tg-Tz6d4&guests=1\n07:06 AM",
+        "media": [
+          {
+            "tag": "A",
+            "class": "link svelte-q2ybpg",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": "https://www.airbnb.com/rooms/1772091373353378277?adults=4&check_in=2026-10-15&check_out=2026-10-17&source_impression_id=p3_1791712682_P30Q6p0-Tg-Tz6d4&guests=1",
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "SPAN.text.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "parsed": {
+        "type": "text",
+        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1776011011718773496?source_impression_id=p3_1791716526_P3PPS6emArYvqUw-&check_in=2026-10-15&guests=4&adults=4&check_out=2026-10-17 07:06 AM",
+        "reply_quote": null,
+        "sender": {
+          "is_outgoing": true,
+          "name": null
+        },
+        "timestamp": 1791788760.0
+      },
+      "observations": [
+        "text_with_media_candidates"
+      ],
+      "dom": {
+        "html": "<div class=\"bubble svelte-1htnb3l\"><div class=\"bubbleContent svelte-1htnb3l\"><!----> <!----> <!----> <!----> <!----> <span class=\"text svelte-1htnb3l\" data-message-double-click-ignore=\"\"><!----><!----><!----><!----><!----><!---->Ch (⦿)  \n<!----><!----><!----><!----><!----><!----><!----><!----><!----><a class=\"link svelte-q2ybpg\" href=\"https://www.airbnb.com/rooms/1776011011718773496?source_impression_id=p3_1791716526_P3PPS6emArYvqUw-&amp;check_in=2026-10-15&amp;guests=4&amp;adults=4&amp;check_out=2026-10-17\" aria-haspopup=\"dialog\" aria-controls=\"\" aria-expanded=\"false\"><!----><!----><!----><!----><!----><!---->https://www.airbnb.com/rooms/1776011011718773496?source_impression_id=p3_1791716526_P3PPS6emArYvqUw-&amp;check_in=2026-10-15&amp;guests=4&amp;adults=4&amp;check_out=2026-10-17<!----></a><!----></span><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <span class=\"meta svelte-1htnb3l\"><div data-message-double-click-ignore=\"\" class=\"meta meta--text svelte-13lobfv\"><span class=\"text svelte-13lobfv\" role=\"button\" tabindex=\"0\"><!----><!----><!----><!----> <!----> 07:06 AM <!----><!----></span><!----> <div class=\"indicators svelte-13lobfv\"><svg aria-hidden=\"true\" width=\"16\" height=\"16\" style=\"\"><use href=\"#icon_status_read\"></use></svg><!----></div><!----></div><!----></span><!----></div> <!----></div>",
+        "text": "Ch (⦿)  \nhttps://www.airbnb.com/rooms/1776011011718773496?source_impression_id=p3_1791716526_P3PPS6emArYvqUw-&check_in=2026-10-15&guests=4&adults=4&check_out=2026-10-17\n07:06 AM",
+        "media": [
+          {
+            "tag": "A",
+            "class": "link svelte-q2ybpg",
+            "src": null,
+            "currentSrc": null,
+            "srcset": null,
+            "poster": null,
+            "href": "https://www.airbnb.com/rooms/1776011011718773496?source_impression_id=p3_1791716526_P3PPS6emArYvqUw-&check_in=2026-10-15&guests=4&adults=4&check_out=2026-10-17",
+            "style": null,
+            "complete": null,
+            "naturalWidth": null,
+            "readyState": null,
+            "parents": [
+              "SPAN.text.svelte-1htnb3l",
+              "DIV.bubbleContent.svelte-1htnb3l"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
