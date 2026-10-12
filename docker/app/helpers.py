@@ -75,10 +75,10 @@ def apply_text_links(text: str, entities: list[dict]) -> str:
 
 
 def strip_trailing_time(text: str) -> str:
-    """Убирает время в конце строки (HH:MM), оставляя символы/эмодзи после него.
+    """Убирает время в конце строки, оставляя символы/эмодзи после него.
 
-    Примеры: "текст 05:56" → "текст", "текст 05:56 ❗️" → "текст ❗️"
+    Примеры: "текст 05:56" → "текст", "текст 07:21 AM" → "текст".
     """
-    if re.search(r"\d{2}:\d{2}\s*(?:[^\w\s]*)$", text):
-        return re.sub(r"\s*\d{2}:\d{2}", "", text)
+    if re.search(r"\d{1,2}:\d{2}\s*(?:[ap]m)?\s*(?:[^\w\s]*)$", text, re.I):
+        return re.sub(r"\s*\d{1,2}:\d{2}\s*(?:[ap]m)?", "", text, flags=re.I)
     return text

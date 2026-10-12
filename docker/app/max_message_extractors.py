@@ -201,7 +201,8 @@ async def extract_text_caption(bubble) -> Optional[str]:
     text_spans = await bubble.query_selector_all(
         'xpath=.//span[contains(@class, "text")'
         ' and not(ancestor::div[contains(@class, "link")])'
-        ' and not(ancestor::button[contains(@class, "mark")])]'
+        ' and not(ancestor::button[contains(@class, "mark")])'
+        ' and not(ancestor::*[contains(@class, "meta")])]'
     )
     parts: list[str] = []
     for text_span in text_spans:
