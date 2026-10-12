@@ -479,44 +479,92 @@ class MaxClient:
         return await response.body()
 
     async def _attach_document_file(self, composer, file_path: str) -> None:
-        """Прикрепляет файл через меню «Файл» (не «Фото или видео»)."""
+        """Прикрепляет документ через меню MAX или напрямую через file input."""
         upload_btn = await self._get_upload_button()
-        file_input = await self._get_photo_input(composer)
-
-        async def input_has_files() -> bool:
-            return await file_input.evaluate(
-                "el => !!(el.files && el.files.length > 0)"
-            )
-
-        await upload_btn.click()
-        file_menu_item = self.page.locator(
-            '[role="dialog"] [role="menuitem"][aria-label="Файл"]'
-        ).first
+        # Некоторые сборки MAX сразу открывают системный выбор файла.
         try:
-            await file_menu_item.wait_for(state="visible", timeout=8000)
-        except Exception:
-            file_menu_item = self.page.get_by_role("menuitem", name="Файл")
-            await file_menu_item.wait_for(state="visible", timeout=5000)
-
-        try:
-            async with self.page.expect_file_chooser(timeout=15000) as fc_info:
-                await file_menu_item.click()
+            async with self.page.expect_file_chooser(timeout=3000) as fc_info:
+                await upload_btn.click()
             file_chooser = await fc_info.value
             await file_chooser.set_files(file_path)
-        except Exception as ex:
-            logger.warning(
-                f"File chooser after «Файл» failed ({ex}), trying set_input_files"
-            )
-            await file_input.set_input_files(file_path)
+            logger.info("Document selected through attachment button")
+            return
+        except Exception:
+            # Обычно сначала показывается меню выбора типа вложения.
+            pass
 
-        if not await input_has_files():
-            logger.warning("input still empty; retrying set_input_files")
-            await file_input.set_input_files(file_path)
+        menu_selectors = [
+            '[role="menuitem"][aria-label="Файл"]',
+            '[role="menuitem"][aria-label*="файл" i]',
+            '[role="menuitem"][aria-label="File"]',
+            '[role="menuitem"][aria-label*="document" i]',
+            '[role="menuitem"]:has-text("Файл")',
+            '[role="menuitem"]:has-text("Документ")',
+            '[role="menuitem"]:has-text("File")',
+            '[role="menuitem"]:has-text("Document")',
+            '[role="dialog"] button:has-text("Файл")',
+            '[role="dialog"] button:has-text("Документ")',
+            '[role="dialog"] button:has-text("File")',
+            '[role="dialog"] button:has-text("Document")',
+        ]
+        menu_item = None
+        for selector in menu_selectors:
+            candidate = self.page.locator(selector).first
+            try:
+                await candidate.wait_for(state="visible", timeout=1000)
+                menu_item = candidate
+                break
+            except Exception:
+                continue
 
-        if not await input_has_files():
+        if menu_item is not None:
+            try:
+                async with self.page.expect_file_chooser(timeout=5000) as fc_info:
+                    await menu_item.click()
+                file_chooser = await fc_info.value
+                await file_chooser.set_files(file_path)
+                return
+            except Exception as ex:
+                logger.warning(
+                    f"File chooser after document menu click failed ({ex}); "
+                    "trying a document input"
+                )
+
+        file_input = await self._get_document_input(composer)
+        await file_input.set_input_files(file_path)
+        has_files = await file_input.evaluate(
+            "el => !!(el.files && el.files.length > 0)"
+        )
+        if not has_files:
             raise RuntimeError(
-                "File did not attach: <input type=file> has no files after upload attempts"
+                "Document did not attach: no file chooser or populated file input"
             )
+
+    async def _get_document_input(self, composer, timeout_ms: int = 5000):
+        """Prefer MAX's generic/document input over the image/video input."""
+        deadline = time.monotonic() + timeout_ms / 1000
+        while time.monotonic() < deadline:
+            candidates = []
+            for root in (composer, self.page):
+                inputs = root.locator('input[type="file"]')
+                for index in range(await inputs.count()):
+                    candidate = inputs.nth(index)
+                    try:
+                        accept = (await candidate.get_attribute("accept") or "").lower()
+                        if not any(kind in accept for kind in ("image", "video")):
+                            candidates.append(candidate)
+                    except Exception:
+                        continue
+            if candidates:
+                return candidates[-1]
+            await self.page.wait_for_timeout(250)
+
+        # Some MAX builds share one input for every attachment type. Playwright's
+        # set_input_files bypasses the browser's accept-filter on the native picker.
+        inputs = self.page.locator('input[type="file"]')
+        if await inputs.count():
+            return inputs.last
+        raise TimeoutError("document file input not found")
 
     async def send_file(
         self,
