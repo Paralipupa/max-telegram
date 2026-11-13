@@ -121,7 +121,7 @@ async def extract_message_timestamp(bubble) -> Optional[float]:
     """Returns the MAX message time as a Unix timestamp, when the DOM exposes it."""
     value = await bubble.evaluate(
         """(el) => {
-          const meta = el.querySelector('span.meta .meta--text > .text');
+          const meta = el.querySelector('span.meta div.meta > span.text');
           const timeText = (meta?.innerText || '').trim();
           const match = timeText.match(/(\\d{1,2}):(\\d{2})(?:\\s*([ap]m))?/i);
           if (!match) return null;

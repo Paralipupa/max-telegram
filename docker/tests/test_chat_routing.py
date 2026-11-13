@@ -103,7 +103,7 @@ class TelegramRoutingTests(unittest.IsolatedAsyncioTestCase):
             deliver.side_effect = TelegramUnauthorizedError("Unauthorized")
             with self.assertRaises(TelegramUnauthorizedError):
                 await _process_messages(
-                    store, [{"type": "text", "text": "message"}], 0, Mock(), PAIR
+                    store, [{"type": "text", "text": "message"}], Mock(), PAIR
                 )
         store.add.assert_not_called()
 
@@ -113,10 +113,9 @@ class TelegramRoutingTests(unittest.IsolatedAsyncioTestCase):
         store.has.return_value = False
         with patch("bridge._send_to_telegram", new_callable=AsyncMock) as deliver:
             deliver.side_effect = RuntimeError("Unauthorized")
-            count = await _process_messages(
-                store, [{"type": "text", "text": "message"}], 0, Mock(), PAIR
+            await _process_messages(
+                store, [{"type": "text", "text": "message"}], Mock(), PAIR
             )
-        self.assertEqual(count, 0)
         store.add.assert_not_called()
 
     async def test_empty_max_chat_finishes_warmup(self):

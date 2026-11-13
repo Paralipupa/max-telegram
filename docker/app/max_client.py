@@ -476,7 +476,12 @@ class MaxClient:
     async def download_file(self, url: str) -> bytes:
         """Загружает файл через браузерный контекст (с авторизацией Max)."""
         response = await self.page.context.request.get(url)
-        return await response.body()
+        try:
+            if not response.ok:
+                raise RuntimeError(f"MAX вернул HTTP {response.status} при загрузке файла")
+            return await response.body()
+        finally:
+            await response.dispose()
 
     async def _attach_document_file(self, composer, file_path: str) -> None:
         """Прикрепляет документ через меню MAX или напрямую через file input."""

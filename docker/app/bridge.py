@@ -1,16 +1,19 @@
 import asyncio
-import datetime
-import os
+import hashlib
 import time
+
+from loguru import logger
+
+from browser import BrowserManager
 from constants import (
     MAX_MESSAGE_AGE_MINUTES,
     MAX_PREFIX,
-    TELEGRAM_PREFIX,
     TAIL_LIMIT,
+    TELEGRAM_PREFIX,
     ChatPair,
 )
+from dedup_store import DedupStore
 from helpers import strip_trailing_time
-from browser import BrowserManager
 from max_client import MaxClient
 from telegram_client import (
     TelegramUnauthorizedError,
@@ -20,8 +23,6 @@ from telegram_client import (
     send_photo,
     send_video,
 )
-from dedup_store import DedupStore
-from loguru import logger
 
 
 async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
@@ -42,18 +43,7 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
             f"[{pair.name}] Дедупликация пока пустая; повторяем прогрев через 10 секунд"
         )
         await asyncio.sleep(10)
-    seen_count = store.count()
-    last_count_refresh = time.monotonic()
-
-    logger.info(
-        f"[{pair.name}] Дедупликация прогрета: {seen_count}. Слушаем сообщения..."
-    )
-    asyncio.create_task(
-        _midnight_dedup_reset_loop(
-            pair.name, b, store, maxc, keep_last=TAIL_LIMIT
-        ),
-        name=f"midnight-dedup-{pair.name}",
-    )
+    logger.info(f"[{pair.name}] Дедупликация прогрета: {store.count()}. Слушаем сообщения...")
     last_page_reload = time.monotonic()
     PAGE_RELOAD_INTERVAL = (
         30 * 60
@@ -64,61 +54,17 @@ async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
 
     while True:
         try:
-            seen_count, last_count_refresh = _refresh_seen_count_if_needed(
-                store, seen_count, last_count_refresh
-            )
             now = time.monotonic()
             if now - last_page_reload >= PAGE_RELOAD_INTERVAL:
                 last_page_reload = now  # обновляем заранее, чтобы не зациклиться при ошибке
                 async with b["lock"]:
-                    # logger.info(
-                    #     f"[{pair.name}] Перезагружаем страницу браузера для освобождения памяти"
-                    # )
-                    try:
-                        await BrowserManager.reload_page(pair.name)
-                    except Exception as reload_err:
-                        logger.error(
-                            f"[{pair.name}] Страница недоступна после перезагрузки "
-                            f"(возможно, требуется авторизация): {reload_err}"
-                        )
-                        logger.warning(
-                            f"[{pair.name}] Принудительно сбрасываем дедупликацию "
-                            f"и проверяем доступность страницы..."
-                        )
-                        try:
-                            os.remove(pair.dedup_path)
-                            logger.info(
-                                f"[{pair.name}] БД дедупликации удалена: {pair.dedup_path}"
-                            )
-                        except FileNotFoundError:
-                            pass
-                        store = DedupStore(pair.dedup_path)
-                        try:
-                            warm = await maxc.get_recent_messages_info(limit=30)
-                            for msg in warm:
-                                fp, text = store.fingerprint(msg)
-                                # logger.info(f" warmup fingerprint --> {fp} text --> {text[:30]}")
-                                store.add(fp)
-                            seen_count = store.count()
-                            logger.info(
-                                f"[{pair.name}] Прогрев после сброса успешен: {seen_count} записей"
-                            )
-                        except Exception as warmup_err:
-                            logger.error(
-                                f"[{pair.name}] Страница всё ещё недоступна: {warmup_err}. "
-                                f"Завершаем bridge."
-                            )
-                            raise SystemExit(
-                                f"[{pair.name}] Bridge завершён: авторизация недействительна"
-                            ) from warmup_err
+                    await BrowserManager.reload_page(pair.name)
             async with b["lock"]:
                 await maxc.ensure_chat(pair.max_chat_id)
-                msgs = await maxc.get_recent_messages_info(
-                    limit=_dynamic_tail_limit(seen_count)
-                )
+                msgs = await maxc.get_recent_messages_info(limit=TAIL_LIMIT)
                 if not maxc.is_chat_url(maxc.page.url, pair.max_chat_id):
                     raise RuntimeError(f"[{pair.name}] MAX переключился на другой чат")
-            seen_count = await _process_messages(store, msgs, seen_count, maxc, pair)
+            await _process_messages(store, msgs, maxc, pair)
         except TelegramUnauthorizedError as e:
             logger.error(f"[{pair.name}] {e}. Останавливаем опрос этой пары до перезапуска")
             return
@@ -231,69 +177,38 @@ async def _send_to_telegram(
         )
 
 
-def _refresh_seen_count_if_needed(
-    store: DedupStore,
-    seen_count: int,
-    last_count_refresh: float,
-    interval_sec: float = 5.0,
-) -> tuple[int, float]:
-    now = time.monotonic()
-    if now - last_count_refresh >= interval_sec:
-        return store.count(), now
-    return seen_count, last_count_refresh
+def _is_expired(msg: dict) -> bool:
+    timestamp = msg.get("timestamp")
+    return (
+        MAX_MESSAGE_AGE_MINUTES > 0
+        and isinstance(timestamp, (int, float))
+        and time.time() - timestamp > MAX_MESSAGE_AGE_MINUTES * 60
+    )
 
 
-def _dynamic_tail_limit(seen_count: int, tail_limit: int = TAIL_LIMIT) -> int:
-    # Повторно проверяем весь хвост: неотправленное сообщение не должно исчезнуть
-    # из выборки после появления следующего сообщения.
-    return tail_limit
+def _photo_field(msg: dict) -> str | None:
+    if msg.get("type") == "images" and msg.get("urls"):
+        return "urls"
+    if msg.get("type") == "mixed" and msg.get("image_urls"):
+        return "image_urls"
+    return None
 
 
-async def _midnight_dedup_reset_loop(
-    pair_name: str,
-    b: dict,
-    store: DedupStore,
-    maxc: MaxClient,
-    *,
-    keep_last: int = 30,
-) -> None:
-    """В локальную полночь обнуляет дедуп и оставляет только отпечатки последних пузырей Max."""
-    while True:
-        now = datetime.datetime.now()
-        today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        next_midnight = today_midnight + datetime.timedelta(days=1)
-        delay_sec = (next_midnight - now).total_seconds()
-        if delay_sec <= 0:
-            next_midnight = next_midnight + datetime.timedelta(days=1)
-            delay_sec = (next_midnight - now).total_seconds()
-        await asyncio.sleep(delay_sec)
-        try:
-            async with b["lock"]:
-                n = await _reset_dedup_to_recent_fingerprints(
-                    store, maxc, limit=keep_last
-                )
-            logger.info(
-                f"[{pair_name}] Полночь: дедуп сброшен, в БД только последние сообщения ({n} записей)"
-            )
-        except Exception as e:
-            logger.error(f"[{pair_name}] Сброс дедупа в полночь: {e}")
+def _photo_message_context(msg: dict) -> str:
+    caption = strip_trailing_time(msg.get("caption") or msg.get("text") or "").strip()
+    caption_hash = hashlib.sha256(caption.encode("utf-8")).hexdigest()
+    outgoing = bool((msg.get("sender") or {}).get("is_outgoing"))
+    return f"{msg.get('timestamp')}:{int(outgoing)}:{caption_hash}"
 
 
-async def _reset_dedup_to_recent_fingerprints(
-    store: DedupStore,
-    maxc: MaxClient,
-    *,
-    limit: int = TAIL_LIMIT*3,
-) -> int:
-    """Читает с Max последние `limit` пузырей и полностью заменяет ими таблицу дедупа."""
-    warm = await maxc.get_recent_messages_info(limit=limit)
-    fingerprints: list[str] = []
-    for msg in warm:
-        fp, text = store.fingerprint(msg)
-        logger.info(f" midnight reset fingerprint --> {fp} text --> {text[:30]}")
-        fingerprints.append(fp)
-    store.replace_all_fingerprints(fingerprints)
-    return store.count()
+async def _photo_content_fingerprint(
+    msg: dict, field: str, context: str, maxc: MaxClient
+) -> str:
+    hashes = [
+        hashlib.sha256(await maxc.download_file(url)).hexdigest() for url in msg[field]
+    ]
+    fingerprint, _ = DedupStore.fingerprint({**msg, field: hashes})
+    return f"photo-content:{context}:{fingerprint}"
 
 
 async def _warmup_dedup_if_needed(
@@ -302,14 +217,33 @@ async def _warmup_dedup_if_needed(
     if store.count() != 0:
         return True
     try:
-        count = TAIL_LIMIT*3
-        warm = await maxc.get_recent_messages_info(limit=count)
+        warm = await maxc.get_recent_messages_info(limit=TAIL_LIMIT * 3)
         if not maxc.is_chat_url(maxc.page.url, chat_id):
             raise RuntimeError("MAX покинул открытый чат во время прогрева")
+        fingerprints = []
         for msg in warm:
             fp, text = store.fingerprint(msg)
-            logger.info(f"--> {text[:30]}")
-            store.add(fp)
+            field = _photo_field(msg)
+            if TELEGRAM_PREFIX in text:
+                continue
+            if not field:
+                fingerprints.append(fp)
+                continue
+            context = _photo_message_context(msg)
+            fingerprints.append(f"photo-url:{context}:{fp}")
+            if not _is_expired(msg):
+                try:
+                    content_key = await _photo_content_fingerprint(
+                        msg, field, context, maxc
+                    )
+                    fingerprints.append(content_key)
+                except Exception as e:
+                    logger.warning(
+                        f"[{pair_name}] Не удалось проверить фото при прогреве: "
+                        f"{type(e).__name__}"
+                    )
+        if fingerprints:
+            store.add(*fingerprints)
         return True
     except Exception as e:
         logger.error(f"[{pair_name}] Ошибка прогрева дедупа: {e}")
@@ -319,34 +253,42 @@ async def _warmup_dedup_if_needed(
 async def _process_messages(
     store: DedupStore,
     msgs: list[dict],
-    seen_count: int,
     maxc: MaxClient,
     pair: ChatPair,
-) -> int:
+) -> None:
     for msg in reversed(msgs):
         fp, text = store.fingerprint(msg)
         if TELEGRAM_PREFIX in text:
             continue
-        if store.has(fp):   
+        field = _photo_field(msg)
+        context = _photo_message_context(msg) if field else ""
+        url_key = f"photo-url:{context}:{fp}" if field else fp
+        if store.has(url_key):
             continue
 
-        timestamp = msg.get("timestamp")
-        max_age_seconds = MAX_MESSAGE_AGE_MINUTES * 60
-        if (
-            MAX_MESSAGE_AGE_MINUTES > 0
-            and isinstance(timestamp, (int, float))
-            and time.time() - timestamp > max_age_seconds
-        ):
+        if _is_expired(msg):
             logger.info(
                 f"[{pair.name}] Пропускаем сообщение MAX старше "
                 f"{MAX_MESSAGE_AGE_MINUTES} минут: {text[:60]}"
             )
-            store.add(fp)
-            seen_count += 1
+            store.add(url_key)
             continue
 
+        content_key = None
+        if field:
+            try:
+                content_key = await _photo_content_fingerprint(msg, field, context, maxc)
+            except Exception as e:
+                logger.warning(
+                    f"[{pair.name}] Не удалось проверить содержимое фото MAX: "
+                    f"{type(e).__name__}. Повторим при следующем опросе."
+                )
+                continue
+            if store.has(content_key) or store.has(fp):
+                store.add(url_key, content_key)
+                continue
+
         try:
-            logger.info(f" process fingerprint --> {fp} text --> {text[:30]} msg --> {msg}")
             message_text = msg.get("text") or msg.get("caption") or ""
             message_text = strip_trailing_time(message_text)
             await _send_to_telegram(msg, message_text, maxc, pair)
@@ -355,6 +297,7 @@ async def _process_messages(
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка при отправке сообщения: {e}")
             continue
-        store.add(fp)
-        seen_count += 1
-    return seen_count
+        if content_key:
+            store.add(url_key, content_key)
+        else:
+            store.add(url_key)
