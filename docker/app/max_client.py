@@ -1,13 +1,16 @@
 import asyncio
-from constants import TELEGRAM_PREFIX
-from playwright.async_api import Page
-from loguru import logger
 import time
 from urllib.parse import urlsplit
+
+from loguru import logger
+from playwright.async_api import Page
+
+from constants import TELEGRAM_PREFIX
+from helpers import release_elements
+from max_media_loading import load_lazy_photos
 from max_message_extractors import extract_emojis, merge_caption_and_emojis
 from max_message_info import bubble_to_message_info
 from media_debug import MediaDebug
-from max_media_loading import load_lazy_photos
 
 
 class MaxClient:
@@ -30,16 +33,19 @@ class MaxClient:
     async def ensure_chat(self, chat_id: str) -> None:
         await self.open_chat(chat_id)
 
-    async def open_chat(self, chat_id):
+    async def open_chat(self, chat_id: str, *, force_reload: bool = False) -> None:
         url = f"https://web.max.ru/{chat_id}"
         editor_selector = '[contenteditable][role="textbox"]'
-        if self.is_chat_url(self.page.url, chat_id):
+        if not force_reload and self.is_chat_url(self.page.url, chat_id):
             editor = self.page.locator(editor_selector).last
             if await editor.is_visible():
                 return
         for attempt in range(3):
             try:
-                await self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                if force_reload and self.is_chat_url(self.page.url, chat_id):
+                    await self.page.reload(wait_until="domcontentloaded", timeout=60000)
+                else:
+                    await self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
                 self._empty_chat_ready = False
                 current_url = self.page.url
                 if "/login" in current_url or "/auth" in current_url:
@@ -48,12 +54,16 @@ class MaxClient:
                         "Обновите auth.json: запустите local-auth/get_auth.py"
                     )
                 try:
-                    await self.page.wait_for_selector(editor_selector, state="visible", timeout=30000)
+                    editor_handle = await self.page.wait_for_selector(
+                        editor_selector, state="visible", timeout=30000
+                    )
                 except Exception as exc:
                     raise RuntimeError(
                         f"Чат MAX {chat_id} не открылся: адрес страницы {self.page.url}. "
                         "Проверьте MAX_CHAT_ID в .env и доступ аккаунта к чату"
                     ) from exc
+                if editor_handle is not None:
+                    await editor_handle.dispose()
                 current_url = self.page.url
                 if not self.is_chat_url(current_url, chat_id):
                     raise RuntimeError(
@@ -96,21 +106,20 @@ class MaxClient:
         return text.strip() if text else None
 
     async def get_last_message_info(self):
-        await self.page.wait_for_selector(".bubble", state="attached", timeout=30000)
-        bubbles = await self.page.query_selector_all(".bubble")
-        if not bubbles:
-            return None
-        last_bubble = bubbles[-1]
-        return await self._bubble_to_message_info(last_bubble)
+        bubble = await self.page.locator(".bubble").last.element_handle(timeout=30000)
+        async with release_elements([bubble]):
+            return await self._bubble_to_message_info(bubble)
 
     async def get_recent_messages_info(self, limit: int = 25) -> list[dict]:
         """Возвращает последние `limit` сообщений (с конца), без None."""
         if getattr(self, "_empty_chat_ready", False):
-            if not await self.page.query_selector_all(".bubble"):
+            if not await self.page.locator(".bubble").count():
                 return []
         else:
             try:
-                await self.page.wait_for_selector(".bubble", state="attached", timeout=30000)
+                first = await self.page.wait_for_selector(
+                    ".bubble", state="attached", timeout=30000
+                )
             except Exception as exc:
                 path = self.page.url.removeprefix("https://web.max.ru/").strip("/")
                 if path.lstrip("-").isdigit():
@@ -122,21 +131,19 @@ class MaxClient:
                     self.page, [], [], reason=f"bubble_wait_failed:{type(exc).__name__}"
                 )
                 raise
+            if first is not None:
+                await first.dispose()
         self._empty_chat_ready = False
-        bubbles = await self.page.query_selector_all(".bubble")
-        if not bubbles:
-            await self.media_debug.capture(self.page, [], [], reason="no_bubbles")
-            return []
-        tail = bubbles[-max(1, int(limit)) :]
-        parsed = []
-        out: list[dict] = []
-        for bubble in tail:
-            info = await self._bubble_to_message_info(bubble)
-            parsed.append(info)
-            if info:
-                out.append(info)
-        await self.media_debug.capture(self.page, tail, parsed)
-        return out
+        async with release_elements(await self.page.query_selector_all(".bubble")) as bubbles:
+            if not bubbles:
+                await self.media_debug.capture(self.page, [], [], reason="no_bubbles")
+                return []
+            tail = bubbles[-max(1, int(limit)) :]
+            parsed = []
+            for bubble in tail:
+                parsed.append(await self._bubble_to_message_info(bubble))
+            await self.media_debug.capture(self.page, tail, parsed)
+            return [info for info in parsed if info]
 
     async def _get_editor(self):
         await self.page.wait_for_load_state("domcontentloaded")

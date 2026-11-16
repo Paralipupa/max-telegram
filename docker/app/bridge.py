@@ -24,53 +24,64 @@ from telegram_client import (
     send_video,
 )
 
+PAGE_RELOAD_INTERVAL = 30 * 60
+
 
 async def run_bridge(pair: ChatPair, total_pairs: int = 1) -> None:
     logger.info(
         f"[{pair.name}] Запускаем bridge: Max {pair.max_chat_id} → TG {pair.telegram_chat_id}"
     )
-    b = await BrowserManager.get(pair.name, pair.max_url)
-    maxc = MaxClient(b["page"])
-
     store = DedupStore(pair.dedup_path)
-    while True:
-        async with b["lock"]:
-            await maxc.ensure_chat(pair.max_chat_id)
-            warmed = await _warmup_dedup_if_needed(store, maxc, pair.name, pair.max_chat_id)
-        if warmed:
-            break
-        logger.warning(
-            f"[{pair.name}] Дедупликация пока пустая; повторяем прогрев через 10 секунд"
-        )
-        await asyncio.sleep(10)
-    logger.info(f"[{pair.name}] Дедупликация прогрета: {store.count()}. Слушаем сообщения...")
+    maxc: MaxClient | None = None
+    warmed = False
     last_page_reload = time.monotonic()
-    PAGE_RELOAD_INTERVAL = (
-        30 * 60
-    )  # Перезагружать страницу каждые 30 минут (освобождает память SPA)
     poll_interval = (
         total_pairs * 2
     )  # Чем больше пар, тем реже опрашиваем — снижаем нагрузку на CPU
 
     while True:
+        delay = poll_interval
         try:
-            now = time.monotonic()
-            if now - last_page_reload >= PAGE_RELOAD_INTERVAL:
-                last_page_reload = now  # обновляем заранее, чтобы не зациклиться при ошибке
-                async with b["lock"]:
-                    await BrowserManager.reload_page(pair.name)
-            async with b["lock"]:
-                await maxc.ensure_chat(pair.max_chat_id)
-                msgs = await maxc.get_recent_messages_info(limit=TAIL_LIMIT)
-                if not maxc.is_chat_url(maxc.page.url, pair.max_chat_id):
-                    raise RuntimeError(f"[{pair.name}] MAX переключился на другой чат")
-            await _process_messages(store, msgs, maxc, pair)
+            async with BrowserManager.page(pair.name, pair.max_url) as page:
+                now = time.monotonic()
+                if maxc is None or maxc.page is not page:
+                    maxc = MaxClient(page)
+                    last_page_reload = now
+
+                if now - last_page_reload >= PAGE_RELOAD_INTERVAL:
+                    last_page_reload = now
+                    await maxc.open_chat(pair.max_chat_id, force_reload=True)
+                else:
+                    await maxc.ensure_chat(pair.max_chat_id)
+
+                msgs = []
+                if not warmed:
+                    warmed = await _warmup_dedup_if_needed(
+                        store, maxc, pair.name, pair.max_chat_id
+                    )
+                    if warmed:
+                        logger.info(
+                            f"[{pair.name}] Дедупликация прогрета: {store.count()}. "
+                            "Слушаем сообщения..."
+                        )
+                    else:
+                        delay = 10
+                        logger.warning(
+                            f"[{pair.name}] Дедупликация пока пустая; "
+                            "повторяем прогрев через 10 секунд"
+                        )
+                if warmed:
+                    msgs = await maxc.get_recent_messages_info(limit=TAIL_LIMIT)
+                    if not maxc.is_chat_url(page.url, pair.max_chat_id):
+                        raise RuntimeError(f"[{pair.name}] MAX переключился на другой чат")
+            if msgs:
+                await _process_messages(store, msgs, maxc, pair)
         except TelegramUnauthorizedError as e:
             logger.error(f"[{pair.name}] {e}. Останавливаем опрос этой пары до перезапуска")
             return
         except Exception as e:
             logger.error(f"[{pair.name}] Ошибка: {e}")
-        await asyncio.sleep(poll_interval)
+        await asyncio.sleep(delay)
 
 
 def _format_reply_prefix(msg: dict) -> str:

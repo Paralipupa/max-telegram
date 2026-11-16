@@ -14,6 +14,38 @@ PAIR = ChatPair("тест", "-123", "token", "-456")
 
 
 class MaxRoutingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_forced_reload_reloads_an_already_open_chat(self):
+        page = Mock(url=PAIR.max_url)
+        page.reload = AsyncMock()
+        page.goto = AsyncMock()
+        page.locator.return_value.last.is_visible = AsyncMock(return_value=True)
+        editor = AsyncMock()
+        page.wait_for_selector = AsyncMock(return_value=editor)
+        client = MaxClient(page)
+        client._empty_chat_ready = True
+
+        await client.open_chat(PAIR.max_chat_id, force_reload=True)
+
+        page.reload.assert_awaited_once_with(wait_until="domcontentloaded", timeout=60000)
+        page.goto.assert_not_awaited()
+        editor.dispose.assert_awaited_once()
+        self.assertFalse(client._empty_chat_ready)
+
+    async def test_poll_disposes_even_unparsed_handles_after_error(self):
+        first, older, recent = AsyncMock(), AsyncMock(), AsyncMock()
+        page = Mock(url=PAIR.max_url)
+        page.wait_for_selector = AsyncMock(return_value=first)
+        page.query_selector_all = AsyncMock(return_value=[older, recent])
+        client = MaxClient(page)
+        client._bubble_to_message_info = AsyncMock(side_effect=RuntimeError("parse"))
+
+        with self.assertRaisesRegex(RuntimeError, "parse"):
+            await client.get_recent_messages_info(limit=1)
+
+        client._bubble_to_message_info.assert_awaited_once_with(recent)
+        for handle in (first, older, recent):
+            handle.dispose.assert_awaited_once()
+
     async def test_open_chat_rejects_redirect_to_chat_list(self):
         page = Mock()
         page.url = "https://web.max.ru/"

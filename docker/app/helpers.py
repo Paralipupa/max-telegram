@@ -1,5 +1,26 @@
-import re
+import asyncio
 import html as _html
+import re
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from playwright.async_api import ElementHandle
+
+
+@asynccontextmanager
+async def release_elements(
+    elements: list["ElementHandle"],
+) -> AsyncIterator[list["ElementHandle"]]:
+    """Освобождает ссылки на DOM, в том числе при ошибке разбора."""
+    try:
+        yield elements
+    finally:
+        # Закрытие вкладки может прервать освобождение ссылок.
+        await asyncio.gather(
+            *(element.dispose() for element in elements), return_exceptions=True
+        )
 
 
 def build_html_with_links(text: str, entities: list[dict]) -> str | None:

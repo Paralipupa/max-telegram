@@ -15,6 +15,8 @@ class LazyPhotosTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(await load_lazy_photos(bubble))
         a.scroll_into_view_if_needed.assert_awaited_once()
         b.scroll_into_view_if_needed.assert_awaited_once()
+        self.assertEqual(a.dispose.await_count, 2)
+        self.assertEqual(b.dispose.await_count, 2)
 
     async def test_loaded_image_is_not_scrolled(self):
         node = AsyncMock()

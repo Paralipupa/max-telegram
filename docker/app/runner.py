@@ -56,7 +56,6 @@ async def main():
     logger.info(f"Загружено {len(pairs)} пар чатов: {[p.name for p in pairs]}")
 
     # Сбрасываем дедупликацию и заранее открываем страницы для каждой пары.
-    # Последовательная инициализация гарантирует создание браузера до старта фоновых задач.
     for pair in pairs:
         if os.path.exists(pair.dedup_path) and DEDUP_RESET:
             logger.info(f"[{pair.name}] Сбрасываем дедупликацию: {pair.dedup_path}")
@@ -64,7 +63,8 @@ async def main():
                 os.remove(pair.dedup_path)
             except Exception as e:
                 logger.error(f"[{pair.name}] Ошибка сброса дедупликации: {e}")
-        await BrowserManager.get(pair.name, pair.max_url)
+        async with BrowserManager.page(pair.name, pair.max_url):
+            pass
 
     app = create_app(pairs)
     # Не пишем HTTP access-log: внешние сканеры засоряют его тысячами 404,

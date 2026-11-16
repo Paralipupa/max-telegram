@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from helpers import release_elements
+
 
 async def extract_image_urls(bubble) -> list[str]:
     """Extracts image URLs from a MAX message bubble."""
@@ -9,11 +11,12 @@ async def extract_image_urls(bubble) -> list[str]:
     if not imgs:
         imgs = await bubble.query_selector_all("div.media img")
     urls: list[str] = []
-    for img in imgs:
-        src = await img.get_attribute("src")
-        # пропускаем base64-заглушки (1x1 пиксель для Lottie-анимаций)
-        if src and not src.startswith("data:image"):
-            urls.append(src)
+    async with release_elements(imgs):
+        for img in imgs:
+            src = await img.get_attribute("src")
+            # пропускаем base64-заглушки (1x1 пиксель для Lottie-анимаций)
+            if src and not src.startswith("data:image"):
+                urls.append(src)
     return urls
 
 async def extract_attachment_items(bubble) -> list[dict[str, Any]]:
@@ -209,11 +212,12 @@ async def extract_text_caption(bubble) -> Optional[str]:
         ' and not(ancestor::*[contains(@class, "document")])]'
     )
     parts: list[str] = []
-    for text_span in text_spans:
-        t = await text_span.text_content()
-        t = t.strip() if t else ""
-        if t:
-            parts.append(t)
+    async with release_elements(text_spans):
+        for text_span in text_spans:
+            t = await text_span.text_content()
+            t = t.strip() if t else ""
+            if t:
+                parts.append(t)
     if parts:
         return " ".join(parts)
 
@@ -241,14 +245,16 @@ async def extract_emojis(bubble) -> list[str]:
     """Extracts emojis from a MAX message bubble."""
     emoji_spans = await bubble.query_selector_all("span.emoji")
     emoji_chars: list[str] = []
-    for emoji_span in emoji_spans:
-        emoji_char = await emoji_span.get_attribute("data-lexical-emoji")
-        if not emoji_char:
-            img = await emoji_span.query_selector("img")
-            if img:
-                emoji_char = await img.get_attribute("alt")
-        if emoji_char:
-            emoji_chars.append(emoji_char)
+    async with release_elements(emoji_spans):
+        for emoji_span in emoji_spans:
+            emoji_char = await emoji_span.get_attribute("data-lexical-emoji")
+            if not emoji_char:
+                img = await emoji_span.query_selector("img")
+                if img is not None:
+                    async with release_elements([img]):
+                        emoji_char = await img.get_attribute("alt")
+            if emoji_char:
+                emoji_chars.append(emoji_char)
     return emoji_chars
 
 
