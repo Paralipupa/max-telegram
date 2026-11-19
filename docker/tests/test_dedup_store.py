@@ -48,6 +48,30 @@ class MediaFingerprintTests(unittest.TestCase):
 
 
 class ConsecutivePhotoDeliveryTests(unittest.IsolatedAsyncioTestCase):
+    async def test_changed_caption_does_not_resend_photo_after_restart(self):
+        first = {
+            "type": "images",
+            "caption": "Сергей Сабхаев",
+            "urls": ["https://i.oneme.ru/i?r=initial"],
+        }
+        pair = ChatPair("тест", "-123", "token", "-456")
+        maxc = Mock(download_file=AsyncMock(return_value=b"same photo"))
+
+        with tempfile.TemporaryDirectory() as directory, patch(
+            "bridge.send_photo"
+        ) as send_photo:
+            path = str(Path(directory) / "dedup.sqlite3")
+            await _process_messages(DedupStore(path), [first], maxc, pair)
+            refreshed = {**first, "caption": None}
+            await _process_messages(DedupStore(path), [refreshed], maxc, pair)
+            refreshed = {
+                **refreshed,
+                "urls": ["https://i.oneme.ru/i?r=rotated"],
+            }
+            await _process_messages(DedupStore(path), [refreshed], maxc, pair)
+
+        send_photo.assert_called_once()
+
     async def test_second_photo_in_same_minute_is_delivered(self):
         first = {
             "type": "images",
@@ -112,6 +136,27 @@ class ConsecutivePhotoDeliveryTests(unittest.IsolatedAsyncioTestCase):
             store.add(DedupStore.fingerprint(first)[0])
             await _process_messages(store, [first], maxc, pair)
             await _process_messages(store, [refreshed], maxc, pair)
+
+        send_photo.assert_not_called()
+
+    async def test_legacy_caption_keys_are_migrated(self):
+        first = {
+            "type": "images",
+            "caption": "Сергей Сабхаев",
+            "urls": ["https://i.oneme.ru/i?r=initial"],
+        }
+        pair = ChatPair("тест", "-123", "token", "-456")
+        maxc = Mock(download_file=AsyncMock(return_value=b"same photo"))
+        caption_hash = hashlib.sha256(first["caption"].encode()).hexdigest()
+        fp, _ = DedupStore.fingerprint(first)
+
+        with tempfile.TemporaryDirectory() as directory, patch(
+            "bridge.send_photo"
+        ) as send_photo:
+            store = DedupStore(str(Path(directory) / "dedup.sqlite3"))
+            store.add(f"photo-url:None:0:{caption_hash}:{fp}")
+            await _process_messages(store, [first], maxc, pair)
+            await _process_messages(store, [{**first, "caption": None}], maxc, pair)
 
         send_photo.assert_not_called()
 

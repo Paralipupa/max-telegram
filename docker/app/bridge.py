@@ -206,10 +206,8 @@ def _photo_field(msg: dict) -> str | None:
 
 
 def _photo_message_context(msg: dict) -> str:
-    caption = strip_trailing_time(msg.get("caption") or msg.get("text") or "").strip()
-    caption_hash = hashlib.sha256(caption.encode("utf-8")).hexdigest()
     outgoing = bool((msg.get("sender") or {}).get("is_outgoing"))
-    return f"{msg.get('timestamp')}:{int(outgoing)}:{caption_hash}"
+    return f"{msg.get('timestamp')}:{int(outgoing)}"
 
 
 async def _photo_content_fingerprint(
@@ -287,6 +285,12 @@ async def _process_messages(
 
         content_key = None
         if field:
+            caption = strip_trailing_time(
+                msg.get("caption") or msg.get("text") or ""
+            ).strip()
+            caption_hash = hashlib.sha256(caption.encode("utf-8")).hexdigest()
+            legacy_context = f"{context}:{caption_hash}"
+            legacy_url_key = f"photo-url:{legacy_context}:{fp}"
             try:
                 content_key = await _photo_content_fingerprint(msg, field, context, maxc)
             except Exception as e:
@@ -295,7 +299,13 @@ async def _process_messages(
                     f"{type(e).__name__}. Повторим при следующем опросе."
                 )
                 continue
-            if store.has(content_key) or store.has(fp):
+            legacy_content_key = content_key.replace(
+                f"photo-content:{context}:", f"photo-content:{legacy_context}:", 1
+            )
+            if any(
+                store.has(key)
+                for key in (content_key, fp, legacy_url_key, legacy_content_key)
+            ):
                 store.add(url_key, content_key)
                 continue
 
